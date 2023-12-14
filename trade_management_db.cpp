@@ -1,4 +1,5 @@
 #include "trade_management_db.h"
+#include "selectdialog.h"
 
 #include <QSqlError>
 #include <QSqlQuery>
@@ -61,30 +62,6 @@ QString TradeManagementDB::tableTypeToTableName(const TableType &table_type)
     return QString();
 }
 
-void TradeManagementDB::getModel(QSqlTableModel *&model)
-{
-    if (m_table_type == TableType::None)
-    {
-        emit errorMsg(QString("[getModel] Не выбрана активная таблица!"));
-        return;
-    }
-
-    if (model != nullptr)
-    {
-        disconnect(model, &QSqlTableModel::beforeUpdate, this, &TradeManagementDB::onUpdate);
-        delete model;
-    }
-    model = new QSqlTableModel(nullptr, m_db);
-    connect(model, &QSqlTableModel::beforeUpdate, this, &TradeManagementDB::onUpdate);
-    model->setEditStrategy(QSqlTableModel::OnManualSubmit);
-    QString table_name = tableTypeToTableName(m_table_type);
-    if (!table_name.isEmpty())
-    {
-        model->setTable(table_name);
-        model->select();
-    }
-}
-
 void TradeManagementDB::addRow()
 {
     if (m_table_type == TableType::None)
@@ -103,6 +80,65 @@ void TradeManagementDB::addRow()
         addRowToBaseProducts();
     else
         emit errorMsg(QString("[addRow] Неизвестный тип таблицы!"));
+}
+
+void TradeManagementDB::getModel(QSqlTableModel *&model)
+{
+    //Проверяем выбрана ли активная таблица
+    if (m_table_type == TableType::None)
+    {
+        emit errorMsg(QString("[getModel] Не выбрана активная таблица!"));
+        return;
+    }
+
+    //Удаляем старую модель
+    if (model != nullptr)
+    {
+        disconnect(model, &QSqlTableModel::beforeUpdate, this, &TradeManagementDB::onUpdate);
+        delete model;
+    }
+    //Создаем новую и соединяем её со слотом валидации
+    model = new QSqlTableModel(nullptr, m_db);
+    connect(model, &QSqlTableModel::beforeUpdate, this, &TradeManagementDB::onUpdate);
+    model->setEditStrategy(QSqlTableModel::OnManualSubmit);
+    QString table_name = tableTypeToTableName(m_table_type);
+    if (!table_name.isEmpty())
+    {
+        model->setTable(table_name);
+        model->select();
+    }
+}
+
+int TradeManagementDB::fieldFromSelectDialog(const TableType &table_type, const QString& name)
+{
+    //Создаем модель
+    QSqlTableModel* model = new QSqlTableModel(nullptr, m_db);
+    model->setEditStrategy(QSqlTableModel::OnManualSubmit);
+    model->setTable(tableTypeToTableName(table_type));
+    model->select();
+
+    //Создаем и запускаем окно
+    SelectDialog* select_dialog = new SelectDialog(model);
+    connect(select_dialog, &SelectDialog::selected, this, &TradeManagementDB::onSelected);
+    select_dialog->exec();
+    disconnect(select_dialog, &SelectDialog::selected, this, &TradeManagementDB::onSelected);
+
+    //Принимаем результат
+    int result = m_selected_row;
+    //Делаем его снова невалидным
+    m_selected_row = -1;
+    //Проверяем принятый на валидность
+    if (result == -1)
+    {
+        emit errorMsg("[rowFromSelectDialog] Строка не выбрана!");
+        delete select_dialog;
+        delete model;
+        return -1;
+    }
+    result = model->record(result).value(name).toInt();
+    delete select_dialog;
+    delete model;
+    return result;
 }
 
 void TradeManagementDB::addTables()
@@ -138,7 +174,7 @@ void TradeManagementDB::addTables()
         //Создание таблицы товаров базы
         if (!query.exec("CREATE TABLE IF NOT EXISTS base_products ("
                         "base_id INT NOT NULL,"
-                        "article VARCHAR(50) NOT NULL CHECK (LENGTH(article) >= 3),"
+                        "article VARCHAR(50) NOT NULL CHECK (LENGTH(article) >= 1),"
                         "name VARCHAR(255) NOT NULL CHECK (LENGTH(name) >= 3),"
                         "type VARCHAR(255) NOT NULL CHECK (LENGTH(type) >= 3),"
                         "price DECIMAL(10, 2) NOT NULL CHECK (price >= 0),"
@@ -163,6 +199,11 @@ void TradeManagementDB::addTables()
 
 void TradeManagementDB::addRowToShops()
 {
+    //Принимаем связанную с магазином базу
+    int base_id = fieldFromSelectDialog(TableType::WholesaleBases, "id");
+    if (base_id == -1)
+        return;
+
     if (m_db.transaction())
     {
         QSqlQuery query(m_db);
@@ -175,8 +216,9 @@ void TradeManagementDB::addRowToShops()
             count = query.value(0).toInt();
         query.prepare("INSERT INTO shops (id, name, class, actual_address, ogrn, inn, kpp, base_id)"
                       "VALUES (:new_id, 'Название магазина', 'Класс магазина', 'г. Москва',"
-                      "'123456789012345', '123456789012', '123456789', 1);");
+                      "'123456789012345', '123456789012', '123456789', :base_id);");
         query.bindValue(":new_id", count + 1);
+        query.bindValue(":base_id", base_id);
 
         if (!query.exec())
         {
@@ -233,20 +275,34 @@ void TradeManagementDB::addRowToShopProducts()
 
 void TradeManagementDB::addRowToBaseProducts()
 {
+    //Принимаем связанную с магазином базу
+    int base_id = fieldFromSelectDialog(TableType::WholesaleBases, "id");
+    if (base_id == -1)
+        return;
+
     if (m_db.transaction())
     {
         QSqlQuery query(m_db);
-        if (!query.exec("SELECT COUNT(id) from base_products;"))
+        //Проверяем наличие такой записи
+        query.prepare("SELECT COUNT(*) FROM base_products WHERE (base_id = :base_id AND article = '000')");
+        query.bindValue(":base_id", base_id);
+        if (!query.exec())
         {
             emit errorMsg("[addRowToBaseProducts] " + query.lastError().text());
         }
-        int count = 0;
+        int tmp = 0;
         while (query.next())
-            count = query.value(0).toInt();
+            tmp = query.value(0).toInt();
+        if (tmp != 0)
+        {
+            emit errorMsg("[addRowToBaseProducts] Уже есть товар с этой базы и артикулом '000'");
+        }
+
+        //Добавлем новую запись
         query.prepare("INSERT INTO base_products (base_id, article, name, type, price, count)"
                       "VALUES (:base_id, '000', 'Именование товара', "
                       "'Тип товара', '0.00', '0');");
-        query.bindValue(":base_id", count + 1);
+        query.bindValue(":base_id", base_id);
 
         if (!query.exec())
         {
@@ -283,4 +339,10 @@ void TradeManagementDB::onUpdate(int row, QSqlRecord &record)
         if (m_db.commit())
             qDebug() << "good";
     }
+}
+
+void TradeManagementDB::onSelected(int row)
+{
+    m_selected_row = row;
+    static_cast<SelectDialog*>(sender())->close();
 }
