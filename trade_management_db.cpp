@@ -53,10 +53,8 @@ QString TradeManagementDB::tableTypeToTableName(const TableType &table_type)
         return "wholesale_bases";
     if (table_type == TableType::Departments)
         return "departments";
-    if (table_type == TableType::Products)
-        return "products";
-    if (table_type == TableType::DepartmentProducts)
-        return "department_products";
+    if (table_type == TableType::ShopProducts)
+        return "shop_products";
     if (table_type == TableType::BaseProducts)
         return "base_products";
     emit errorMsg(QString("[tableTypeToTableName] Неизвестный тип таблицы!"));
@@ -99,10 +97,8 @@ void TradeManagementDB::addRow()
         addRowToWholesaleBases();
     else if (m_table_type == TableType::Departments)
         addRowToDepartments();
-    else if (m_table_type == TableType::Products)
-        addRowToProducts();
-    else if (m_table_type == TableType::DepartmentProducts)
-        addRowToDepartmentProducts();
+    else if (m_table_type == TableType::ShopProducts)
+        addRowToShopProducts();
     else if (m_table_type == TableType::BaseProducts)
         addRowToBaseProducts();
     else
@@ -230,12 +226,7 @@ void TradeManagementDB::addRowToDepartments()
 
 }
 
-void TradeManagementDB::addRowToProducts()
-{
-
-}
-
-void TradeManagementDB::addRowToDepartmentProducts()
+void TradeManagementDB::addRowToShopProducts()
 {
 
 }

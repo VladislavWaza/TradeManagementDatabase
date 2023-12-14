@@ -9,7 +9,7 @@ class TradeManagementDB : public QObject
 {
     Q_OBJECT
 public:
-    enum class TableType {None, Shops, WholesaleBases, Departments, Products, DepartmentProducts, BaseProducts};
+    enum class TableType {None, Shops, WholesaleBases, Departments, ShopProducts, BaseProducts};
 
     explicit TradeManagementDB(QObject *parent = nullptr);
     bool isOpen() const;
@@ -31,8 +31,7 @@ private:
     void addRowToShops();
     void addRowToWholesaleBases();
     void addRowToDepartments();
-    void addRowToProducts();
-    void addRowToDepartmentProducts();
+    void addRowToShopProducts();
     void addRowToBaseProducts();
 
 signals:
