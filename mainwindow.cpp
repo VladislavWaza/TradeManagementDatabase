@@ -52,6 +52,21 @@ void MainWindow::on_showShops_triggered()
     m_ui->tableView->setModel(m_model);
 }
 
+void MainWindow::on_showBases_triggered()
+{
+    m_db.bind(TradeManagementDB::TableType::WholesaleBases);
+    m_db.getModel(m_model);
+    m_ui->tableView->setModel(m_model);
+}
+
+void MainWindow::on_showBasesProds_triggered()
+{
+    m_db.bind(TradeManagementDB::TableType::BaseProducts);
+    m_db.getModel(m_model);
+    m_ui->tableView->setModel(m_model);
+}
+
+
 void MainWindow::onDatabaseError(const QString &msg)
 {
     QMessageBox::critical(this, QString("ОШИБКА!"), msg);
@@ -75,4 +90,3 @@ void MainWindow::on_update_clicked()
     m_db.getModel(m_model);
     m_ui->tableView->setModel(m_model);
 }
-

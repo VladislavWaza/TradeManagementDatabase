@@ -18,9 +18,9 @@
     <property name="geometry">
      <rect>
       <x>10</x>
-      <y>70</y>
-      <width>681</width>
-      <height>271</height>
+      <y>10</y>
+      <width>781</width>
+      <height>331</height>
      </rect>
     </property>
    </widget>
@@ -78,6 +78,8 @@
      <string>Открыть таблицу...</string>
     </property>
     <addaction name="showShops"/>
+    <addaction name="showBases"/>
+    <addaction name="showBasesProds"/>
    </widget>
    <addaction name="menu"/>
   </widget>
@@ -85,6 +87,16 @@
   <action name="showShops">
    <property name="text">
     <string>Магазины</string>
+   </property>
+  </action>
+  <action name="showBases">
+   <property name="text">
+    <string>Базы</string>
+   </property>
+  </action>
+  <action name="showBasesProds">
+   <property name="text">
+    <string>Товары баз</string>
    </property>
   </action>
  </widget>

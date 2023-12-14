@@ -24,8 +24,11 @@ private slots:
     void onDatabaseError(const QString& msg);
     void on_addRow_clicked();
     void on_save_clicked();
-
     void on_update_clicked();
+
+    void on_showBases_triggered();
+
+    void on_showBasesProds_triggered();
 
 private:
     void changeAccessRights();
