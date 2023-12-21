@@ -3,6 +3,7 @@
 #include "authorization.h"
 
 #include <QMessageBox>
+#include <QSqlError>
 
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
@@ -84,8 +85,7 @@ void MainWindow::on_save_clicked()
     if (m_model != nullptr)
         if (!m_model->submitAll())
         {
-            QMessageBox::critical(this, QString("Не валидные изменения!"),
-            "Не все внесенные изменения были сохранены, строки в которые внесены не валидные изменения не были сохранены");
+            QMessageBox::critical(this, QString("Не валидные изменения!"), m_model->lastError().text());
         }
 }
 
