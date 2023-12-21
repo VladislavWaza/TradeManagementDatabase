@@ -186,6 +186,19 @@ void TradeManagementDB::addTables()
             qDebug() << "[addTables]" << query.lastError().text();
         }
 
+        //Создаение таблицы отделов
+        if (!query.exec("CREATE TABLE IF NOT EXISTS departments ("
+                        "id INT NOT NULL,"
+                        "shop_id INT NOT NULL,"
+                        "name VARCHAR(255) NOT NULL CHECK (LENGTH(name) >= 3),"
+                        "manager VARCHAR(255) NOT NULL CHECK (LENGTH(manager) >= 5),"
+                        "PRIMARY KEY (id, shop_id),"
+                        "FOREIGN KEY (shop_id) REFERENCES shops(id)"
+                        ");"))
+        {
+            qDebug() << "[addTables]" << query.lastError().text();
+        }
+
 
 
         if (m_db.commit())
@@ -265,7 +278,42 @@ void TradeManagementDB::addRowToWholesaleBases()
 
 void TradeManagementDB::addRowToDepartments()
 {
+    //Принимаем связанный с отделом магазин
+    int shop_id = fieldFromSelectDialog(TableType::Shops, "id");
+    if (shop_id == -1)
+        return;
 
+    if (m_db.transaction())
+    {
+        QSqlQuery query(m_db);
+        //Считаем число отделов в этом магазине
+        query.prepare("SELECT COUNT(*) FROM departments WHERE (shop_id = :shop_id)");
+        query.bindValue(":shop_id", shop_id);
+        if (!query.exec())
+        {
+            emit errorMsg("[addRowToDepartments] " + query.lastError().text());
+        }
+        int count = 0;
+        while (query.next())
+            count = query.value(0).toInt();
+
+        //Добавлем новую запись
+        query.prepare("INSERT INTO departments (id, shop_id, name, manager)"
+                      "VALUES (:id, :shop_id, 'Именование отдела', 'Заведующий');");
+        query.bindValue(":shop_id", shop_id);
+        query.bindValue(":id", count);
+
+        if (!query.exec())
+        {
+            emit errorMsg("[addRowToDepartments] " + query.lastError().text());
+        }
+        if (m_db.commit())
+            return;
+        else
+            emit errorMsg("[addRowToDepartments] commit failed");
+    }
+    else
+        emit errorMsg("[addRowToDepartments] transaction failed");
 }
 
 void TradeManagementDB::addRowToShopProducts()

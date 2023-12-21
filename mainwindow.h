@@ -30,6 +30,8 @@ private slots:
 
     void on_showBasesProds_triggered();
 
+    void on_showDepartments_triggered();
+
 private:
     void changeAccessRights();
 

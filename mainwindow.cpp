@@ -68,6 +68,14 @@ void MainWindow::on_showBasesProds_triggered()
 }
 
 
+void MainWindow::on_showDepartments_triggered()
+{
+    m_db.bind(TradeManagementDB::TableType::Departments);
+    m_db.getModel(m_model);
+    m_ui->tableView->setModel(m_model);
+}
+
+
 void MainWindow::onDatabaseError(const QString &msg)
 {
     QMessageBox::critical(this, QString("ОШИБКА!"), msg);
@@ -85,7 +93,7 @@ void MainWindow::on_save_clicked()
     if (m_model != nullptr)
         if (!m_model->submitAll())
         {
-            QMessageBox::critical(this, QString("Не валидные изменения!"), m_model->lastError().text());
+            QMessageBox::critical(this, QString("Невалидные изменения!"), m_model->lastError().text());
         }
 }
 
@@ -94,3 +102,4 @@ void MainWindow::on_update_clicked()
     m_db.getModel(m_model);
     m_ui->tableView->setModel(m_model);
 }
+
