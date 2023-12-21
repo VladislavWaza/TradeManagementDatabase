@@ -82,7 +82,11 @@ void MainWindow::on_addRow_clicked()
 void MainWindow::on_save_clicked()
 {
     if (m_model != nullptr)
-        qDebug() << "submitAll" << m_model->submitAll();
+        if (!m_model->submitAll())
+        {
+            QMessageBox::critical(this, QString("Не валидные изменения!"),
+            "Не все внесенные изменения были сохранены, строки в которые внесены не валидные изменения не были сохранены");
+        }
 }
 
 void MainWindow::on_update_clicked()

@@ -319,25 +319,12 @@ void TradeManagementDB::addRowToBaseProducts()
 
 void TradeManagementDB::onUpdate(int row, QSqlRecord &record)
 {
-    qDebug() << row << record.count() << record.field(0).value() << record.field(1).value();
-    record.setGenerated(0, false);
-    qDebug() << record.field(0).tableName();
-    if (m_db.transaction())
+    for (int i = 0; i < record.count(); ++i)
     {
-        qDebug() << m_db.databaseName();
-        QSqlQuery query(m_db);
-        query.prepare("UPDATE shops SET"
-                               "name = :name"
-                               "MCC = :MCC");
-        query.bindValue(":name", record.field(1).value().toString());
-        query.bindValue(":MCC", record.field(1).value().toInt());
-
-        if(!query.exec())
+        if (record.field(i).name().contains("id"))
         {
-            qDebug() << query.lastError().text();
+            record.setGenerated(i, false);
         }
-        if (m_db.commit())
-            qDebug() << "good";
     }
 }
 
