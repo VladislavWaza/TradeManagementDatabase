@@ -32,6 +32,8 @@ private slots:
 
     void on_showDepartments_triggered();
 
+    void on_showShopProds_triggered();
+
 private:
     void changeAccessRights();
 

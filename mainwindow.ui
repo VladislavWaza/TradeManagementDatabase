@@ -81,6 +81,7 @@
     <addaction name="showBases"/>
     <addaction name="showBasesProds"/>
     <addaction name="showDepartments"/>
+    <addaction name="showShopProds"/>
    </widget>
    <addaction name="menu"/>
   </widget>
@@ -103,6 +104,11 @@
   <action name="showDepartments">
    <property name="text">
     <string>Отделы</string>
+   </property>
+  </action>
+  <action name="showShopProds">
+   <property name="text">
+    <string>Товары магазина</string>
    </property>
   </action>
  </widget>

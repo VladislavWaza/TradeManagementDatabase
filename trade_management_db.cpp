@@ -199,7 +199,19 @@ void TradeManagementDB::addTables()
             qDebug() << "[addTables]" << query.lastError().text();
         }
 
-
+        //Создание таблицы товаров магазина
+        if (!query.exec("CREATE TABLE IF NOT EXISTS shop_products ("
+                        "shop_id INT NOT NULL,"
+                        "article VARCHAR(50) NOT NULL CHECK (LENGTH(article) >= 1),"
+                        "name VARCHAR(255) NOT NULL CHECK (LENGTH(name) >= 3),"
+                        "type VARCHAR(255) NOT NULL CHECK (LENGTH(type) >= 3),"
+                        "price DECIMAL(10, 2) NOT NULL CHECK (price >= 0),"
+                        "PRIMARY KEY (shop_id, article),"
+                        "FOREIGN KEY (shop_id) REFERENCES shops_id(id)"
+                        ");"))
+        {
+            qDebug() << "[addTables]" << query.lastError().text();
+        }
 
         if (m_db.commit())
             return;
@@ -318,12 +330,51 @@ void TradeManagementDB::addRowToDepartments()
 
 void TradeManagementDB::addRowToShopProducts()
 {
+    //Принимаем связанный с товаром магазин
+    int shop_id = fieldFromSelectDialog(TableType::Shops, "id");
+    if (shop_id == -1)
+        return;
 
+    if (m_db.transaction())
+    {
+        QSqlQuery query(m_db);
+        //Проверяем наличие такой записи
+        query.prepare("SELECT COUNT(*) FROM shop_products WHERE (shop_id = :shop_id AND article = '000')");
+        query.bindValue(":shop_id", shop_id);
+        if (!query.exec())
+        {
+            emit errorMsg("[addRowToShopProducts] " + query.lastError().text());
+        }
+        int tmp = 0;
+        while (query.next())
+            tmp = query.value(0).toInt();
+        if (tmp != 0)
+        {
+            emit errorMsg("[addRowToShopProducts] Уже есть товар в это магазине и с артикулом '000'");
+        }
+
+        //Добавлем новую запись
+        query.prepare("INSERT INTO shop_products (shop_id, article, name, type, price)"
+                      "VALUES (:shop_id, '000', 'Именование товара', "
+                      "'Тип товара', '0.00');");
+        query.bindValue(":shop_id", shop_id);
+
+        if (!query.exec())
+        {
+            emit errorMsg("[addRowToShopProducts] " + query.lastError().text());
+        }
+        if (m_db.commit())
+            return;
+        else
+            emit errorMsg("[addRowToShopProducts] commit failed");
+    }
+    else
+        emit errorMsg("[addRowToShopProducts] transaction failed");
 }
 
 void TradeManagementDB::addRowToBaseProducts()
 {
-    //Принимаем связанную с магазином базу
+    //Принимаем связанную с товаром базу
     int base_id = fieldFromSelectDialog(TableType::WholesaleBases, "id");
     if (base_id == -1)
         return;
