@@ -43,8 +43,8 @@ private:
     void addRowToBaseProducts();
     void addRowToDepartmentProducts();
 
-    //Возвращает поле с именем name из таблицы table_type
-    int fieldFromSelectDialog(const TableType& table_type, const QString& name);
+    //Возвращает запись из таблицы table_type
+    QSqlRecord recordFromSelectDialog(const TableType& table_type);
 signals:
     void errorMsg(const QString& msg);
 

@@ -82,6 +82,13 @@ void MainWindow::on_showShopProds_triggered()
     m_ui->tableView->setModel(m_model);
 }
 
+void MainWindow::on_showDepProds_triggered()
+{
+    m_db.bind(TradeManagementDB::TableType::DepartmentProducts);
+    m_db.getModel(m_model);
+    m_ui->tableView->setModel(m_model);
+}
+
 
 void MainWindow::onDatabaseError(const QString &msg)
 {
@@ -109,3 +116,5 @@ void MainWindow::on_update_clicked()
     m_db.getModel(m_model);
     m_ui->tableView->setModel(m_model);
 }
+
+

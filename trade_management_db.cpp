@@ -115,7 +115,7 @@ void TradeManagementDB::getModel(QSqlTableModel *&model)
     }
 }
 
-int TradeManagementDB::fieldFromSelectDialog(const TableType &table_type, const QString& name)
+QSqlRecord TradeManagementDB::recordFromSelectDialog(const TableType &table_type)
 {
     //Создаем модель
     QSqlTableModel* model = new QSqlTableModel(nullptr, m_db);
@@ -129,22 +129,21 @@ int TradeManagementDB::fieldFromSelectDialog(const TableType &table_type, const 
     select_dialog->exec();
     disconnect(select_dialog, &SelectDialog::selected, this, &TradeManagementDB::onSelected);
 
-    //Принимаем результат
-    int result = m_selected_row;
-    //Делаем его снова невалидным
-    m_selected_row = -1;
-    //Проверяем принятый на валидность
-    if (result == -1)
+    int row = m_selected_row;
+    //Проверяем результат на валидность
+    if (m_selected_row == -1)
     {
         emit errorMsg("[rowFromSelectDialog] Строка не выбрана!");
         delete select_dialog;
         delete model;
-        return -1;
+        return QSqlRecord();
     }
-    result = model->record(result).value(name).toInt();
+    //Делаем его снова невалидным
+    m_selected_row = -1;
+    QSqlRecord res = model->record(row);
     delete select_dialog;
     delete model;
-    return result;
+    return res;
 }
 
 void TradeManagementDB::addTables()
@@ -184,7 +183,7 @@ void TradeManagementDB::addTables()
                         "name VARCHAR(255) NOT NULL CHECK (LENGTH(name) >= 3),"
                         "type VARCHAR(255) NOT NULL CHECK (LENGTH(type) >= 3),"
                         "price DECIMAL(10, 2) NOT NULL CHECK (price >= 0),"
-                        "count INTEGER NOT NULL CHECK (count >= 0),"
+                        "quantity INTEGER NOT NULL CHECK (quantity >= 0),"
                         "PRIMARY KEY (base_id, article),"
                         "FOREIGN KEY (base_id) REFERENCES wholesale_bases(id) ON UPDATE CASCADE ON DELETE CASCADE"
                         ");"))
@@ -224,10 +223,11 @@ void TradeManagementDB::addTables()
                         "shop_id INTEGER NOT NULL,"
                         "article VARCHAR(50) NOT NULL CHECK (LENGTH(article) >= 1),"
                         "department_id INTEGER NOT NULL,"
-                        "count INTEGER NOT NULL CHECK (count >= 0),"
+                        "quantity INTEGER NOT NULL CHECK (quantity >= 0),"
                         "PRIMARY KEY (shop_id, article, department_id),"
-                        "FOREIGN KEY (shop_id, article) REFERENCES shop_products(shop_id, article) ON UPDATE CASCADE ON DELETE CASCADE,"
-                        "FOREIGN KEY (department_id) REFERENCES departments(id) ON UPDATE CASCADE ON DELETE CASCADE"
+                        "FOREIGN KEY (shop_id, article) REFERENCES shop_products (shop_id, article) ON UPDATE CASCADE ON DELETE CASCADE,"
+                        "FOREIGN KEY (shop_id) REFERENCES shops (id) ON UPDATE CASCADE ON DELETE CASCADE,"
+                        "FOREIGN KEY (department_id, shop_id) REFERENCES departments (id, shop_id) ON UPDATE CASCADE ON DELETE CASCADE"
                         ");"))
         {
             qDebug() << "[addTables]" << query.lastError().text();
@@ -245,9 +245,12 @@ void TradeManagementDB::addTables()
 void TradeManagementDB::addRowToShops()
 {
     //Принимаем связанную с магазином базу
-    int base_id = fieldFromSelectDialog(TableType::WholesaleBases, "id");
-    if (base_id == -1)
+    int base_id = 0;
+    QSqlRecord record = recordFromSelectDialog(TableType::WholesaleBases);
+    if (record == QSqlRecord())
         return;
+    else
+        base_id = record.value("id").toInt();
 
     if (m_db.transaction())
     {
@@ -294,9 +297,12 @@ void TradeManagementDB::addRowToWholesaleBases()
 void TradeManagementDB::addRowToDepartments()
 {
     //Принимаем связанный с отделом магазин
-    int shop_id = fieldFromSelectDialog(TableType::Shops, "id");
-    if (shop_id == -1)
+    int shop_id = 0;
+    QSqlRecord record = recordFromSelectDialog(TableType::Shops);
+    if (record == QSqlRecord())
         return;
+    else
+        shop_id = record.value("id").toInt();
 
     if (m_db.transaction())
     {
@@ -334,9 +340,12 @@ void TradeManagementDB::addRowToDepartments()
 void TradeManagementDB::addRowToShopProducts()
 {
     //Принимаем связанный с товаром магазин
-    int shop_id = fieldFromSelectDialog(TableType::Shops, "id");
-    if (shop_id == -1)
+    int shop_id = 0;
+    QSqlRecord record = recordFromSelectDialog(TableType::Shops);
+    if (record == QSqlRecord())
         return;
+    else
+        shop_id = record.value("id").toInt();
 
     if (m_db.transaction())
     {
@@ -377,9 +386,12 @@ void TradeManagementDB::addRowToShopProducts()
 void TradeManagementDB::addRowToBaseProducts()
 {
     //Принимаем связанную с товаром базу
-    int base_id = fieldFromSelectDialog(TableType::WholesaleBases, "id");
-    if (base_id == -1)
+    int base_id = 0;
+    QSqlRecord record = recordFromSelectDialog(TableType::WholesaleBases);
+    if (record == QSqlRecord())
         return;
+    else
+        base_id = record.value("id").toInt();
 
     if (m_db.transaction())
     {
@@ -400,7 +412,7 @@ void TradeManagementDB::addRowToBaseProducts()
         }
 
         //Добавлем новую запись
-        query.prepare("INSERT INTO base_products (base_id, article, name, type, price, count)"
+        query.prepare("INSERT INTO base_products (base_id, article, name, type, price, quantity)"
                       "VALUES (:base_id, '000', 'Именование товара', "
                       "'Тип товара', 0.00, 0);");
         query.bindValue(":base_id", base_id);
@@ -420,7 +432,72 @@ void TradeManagementDB::addRowToBaseProducts()
 
 void TradeManagementDB::addRowToDepartmentProducts()
 {
+    //Принимаем отдел
+    int dep_id = 0;
+    QSqlRecord record = recordFromSelectDialog(TableType::Departments);
+    if (record == QSqlRecord())
+        return;
+    else
+        dep_id = record.value("id").toInt();
 
+
+    int shop_id = record.value("shop_id").toInt();
+    //Принимаем товар
+    QString article;
+    record = recordFromSelectDialog(TableType::ShopProducts);
+    if (record == QSqlRecord())
+        return;
+    else
+    {
+        //Проверяем что выбранный товар и отдел относятся к одному магазину
+        if (shop_id != record.value("shop_id").toInt())
+        {
+            emit errorMsg("[addRowToDepartmentProducts] Выбранные товар и отдел не относятся к одному магазину!");
+        }
+        else
+            article = record.value("article").toString();
+    }
+
+    if (m_db.transaction())
+    {
+        QSqlQuery query(m_db);
+        //Проверяем наличие такой записи
+        query.prepare("SELECT COUNT(*) FROM department_products "
+                      "WHERE (shop_id = :shop_id AND article = :article AND department_id = :dep_id)");
+        query.bindValue(":shop_id", shop_id);
+        query.bindValue(":article", article);
+        query.bindValue(":dep_id", dep_id);
+        if (!query.exec())
+        {
+            emit errorMsg("[addRowToDepartmentProducts] " + query.lastError().text());
+        }
+        int tmp = 0;
+        while (query.next())
+            tmp = query.value(0).toInt();
+        if (tmp != 0)
+        {
+            emit errorMsg("[addRowToDepartmentProducts] Уже есть товар с этого отдела и магазина и с таким артикулом");
+        }
+
+        //Добавлем новую запись
+        query.prepare("INSERT INTO department_products (shop_id, article, department_id, quantity)"
+                      "VALUES (:shop_id, :article, :department_id, '0');");
+        query.bindValue(":shop_id", shop_id);
+        query.bindValue(":article", article);
+        query.bindValue(":department_id", dep_id);
+
+        if (!query.exec())
+        {
+            emit errorMsg("[addRowToDepartmentProducts] " + query.lastError().text());
+        }
+
+        if (m_db.commit())
+            return;
+        else
+            emit errorMsg("[addRowToDepartmentProducts] commit failed");
+    }
+    else
+        emit errorMsg("[addRowToDepartmentProducts] transaction failed");
 }
 
 void TradeManagementDB::onUpdate(int row, QSqlRecord &record)
