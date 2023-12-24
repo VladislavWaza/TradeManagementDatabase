@@ -9,7 +9,7 @@ class TradeManagementDB : public QObject
 {
     Q_OBJECT
 public:
-    enum class TableType {None, Shops, WholesaleBases, Departments, ShopProducts, BaseProducts};
+    enum class TableType {None, Shops, WholesaleBases, Departments, ShopProducts, BaseProducts, DepartmentProducts};
 
     explicit TradeManagementDB(QObject *parent = nullptr);
     //Функции передают результат от БД
@@ -41,6 +41,7 @@ private:
     void addRowToDepartments();
     void addRowToShopProducts();
     void addRowToBaseProducts();
+    void addRowToDepartmentProducts();
 
     //Возвращает поле с именем name из таблицы table_type
     int fieldFromSelectDialog(const TableType& table_type, const QString& name);

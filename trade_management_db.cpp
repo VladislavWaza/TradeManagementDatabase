@@ -13,6 +13,8 @@ TradeManagementDB::TradeManagementDB(QObject *parent)
     m_db = QSqlDatabase::addDatabase("QSQLITE");
     m_db.setDatabaseName("TradeManagement.db");
     m_db.open();
+    QSqlQuery query;
+    query.exec("PRAGMA foreign_keys = ON;");
     addTables();
 }
 
@@ -58,6 +60,8 @@ QString TradeManagementDB::tableTypeToTableName(const TableType &table_type)
         return "shop_products";
     if (table_type == TableType::BaseProducts)
         return "base_products";
+    if (table_type == TableType::DepartmentProducts)
+        return "department_products";
     emit errorMsg(QString("[tableTypeToTableName] Неизвестный тип таблицы!"));
     return QString();
 }
@@ -78,6 +82,8 @@ void TradeManagementDB::addRow()
         addRowToShopProducts();
     else if (m_table_type == TableType::BaseProducts)
         addRowToBaseProducts();
+    else if (m_table_type == TableType::DepartmentProducts)
+        addRowToDepartmentProducts();
     else
         emit errorMsg(QString("[addRow] Неизвестный тип таблицы!"));
 }
@@ -148,7 +154,7 @@ void TradeManagementDB::addTables()
         QSqlQuery query(m_db);
         //Создание таблицы оптовых баз
         if (!query.exec("CREATE TABLE IF NOT EXISTS wholesale_bases ("
-                        "id INT PRIMARY KEY,"
+                        "id INTEGER NOT NULL PRIMARY KEY,"
                         "name VARCHAR(255) NOT NULL CHECK (LENGTH(name) >= 3),"
                         "actual_address VARCHAR(255) NOT NULL CHECK (LENGTH(actual_address) >= 7),"
                         "ogrn VARCHAR(15) NOT NULL check(ogrn not like '%[^0-9]%' AND (LENGTH(ogrn) = 15 OR LENGTH(ogrn) = 13)),"
@@ -159,28 +165,28 @@ void TradeManagementDB::addTables()
         }
         //Создание таблицы магазинов
         if (!query.exec("CREATE TABLE IF NOT EXISTS shops ("
-                        "id INT PRIMARY KEY,"
+                        "id INTEGER NOT NULL PRIMARY KEY,"
                         "name VARCHAR(255) NOT NULL CHECK (LENGTH(name) >= 3),"
                         "class VARCHAR(255) NOT NULL CHECK (LENGTH(class) >= 3),"
                         "actual_address VARCHAR(255) NOT NULL CHECK (LENGTH(actual_address) >= 7),"
                         "ogrn VARCHAR(15) NOT NULL check(ogrn not like '%[^0-9]%' AND (LENGTH(ogrn) = 15 OR LENGTH(ogrn) = 13)),"
                         "inn VARCHAR(12) NOT NULL check(inn not like '%[^0-9]%' AND LENGTH(inn) = 12),"
                         "kpp VARCHAR(9) NOT NULL check(kpp not like '%[^0-9]%' AND LENGTH(kpp) = 9),"
-                        "base_id INT NOT NULL,"
-                        "FOREIGN KEY (base_id) REFERENCES wholesale_bases(id));"))
+                        "base_id INTEGER NOT NULL,"
+                        "FOREIGN KEY (base_id) REFERENCES wholesale_bases(id) ON UPDATE CASCADE ON DELETE CASCADE);"))
         {
             qDebug() << "[addTables]" << query.lastError().text();
         }
         //Создание таблицы товаров базы
         if (!query.exec("CREATE TABLE IF NOT EXISTS base_products ("
-                        "base_id INT NOT NULL,"
+                        "base_id INTEGER NOT NULL,"
                         "article VARCHAR(50) NOT NULL CHECK (LENGTH(article) >= 1),"
                         "name VARCHAR(255) NOT NULL CHECK (LENGTH(name) >= 3),"
                         "type VARCHAR(255) NOT NULL CHECK (LENGTH(type) >= 3),"
                         "price DECIMAL(10, 2) NOT NULL CHECK (price >= 0),"
-                        "count INT NOT NULL CHECK (count >= 0),"
+                        "count INTEGER NOT NULL CHECK (count >= 0),"
                         "PRIMARY KEY (base_id, article),"
-                        "FOREIGN KEY (base_id) REFERENCES wholesale_bases(id)"
+                        "FOREIGN KEY (base_id) REFERENCES wholesale_bases(id) ON UPDATE CASCADE ON DELETE CASCADE"
                         ");"))
         {
             qDebug() << "[addTables]" << query.lastError().text();
@@ -188,12 +194,12 @@ void TradeManagementDB::addTables()
 
         //Создаение таблицы отделов
         if (!query.exec("CREATE TABLE IF NOT EXISTS departments ("
-                        "id INT NOT NULL,"
-                        "shop_id INT NOT NULL,"
+                        "id INTEGER NOT NULL,"
+                        "shop_id INTEGER NOT NULL,"
                         "name VARCHAR(255) NOT NULL CHECK (LENGTH(name) >= 3),"
                         "manager VARCHAR(255) NOT NULL CHECK (LENGTH(manager) >= 5),"
                         "PRIMARY KEY (id, shop_id),"
-                        "FOREIGN KEY (shop_id) REFERENCES shops(id)"
+                        "FOREIGN KEY (shop_id) REFERENCES shops(id) ON UPDATE CASCADE ON DELETE CASCADE"
                         ");"))
         {
             qDebug() << "[addTables]" << query.lastError().text();
@@ -201,13 +207,27 @@ void TradeManagementDB::addTables()
 
         //Создание таблицы товаров магазина
         if (!query.exec("CREATE TABLE IF NOT EXISTS shop_products ("
-                        "shop_id INT NOT NULL,"
+                        "shop_id INTEGER NOT NULL,"
                         "article VARCHAR(50) NOT NULL CHECK (LENGTH(article) >= 1),"
                         "name VARCHAR(255) NOT NULL CHECK (LENGTH(name) >= 3),"
                         "type VARCHAR(255) NOT NULL CHECK (LENGTH(type) >= 3),"
                         "price DECIMAL(10, 2) NOT NULL CHECK (price >= 0),"
                         "PRIMARY KEY (shop_id, article),"
-                        "FOREIGN KEY (shop_id) REFERENCES shops_id(id)"
+                        "FOREIGN KEY (shop_id) REFERENCES shops(id) ON UPDATE CASCADE ON DELETE CASCADE"
+                        ");"))
+        {
+            qDebug() << "[addTables]" << query.lastError().text();
+        }
+
+        //Создание таблицы товаров отдела
+        if (!query.exec("CREATE TABLE IF NOT EXISTS department_products ("
+                        "shop_id INTEGER NOT NULL,"
+                        "article VARCHAR(50) NOT NULL CHECK (LENGTH(article) >= 1),"
+                        "department_id INTEGER NOT NULL,"
+                        "count INTEGER NOT NULL CHECK (count >= 0),"
+                        "PRIMARY KEY (shop_id, article, department_id),"
+                        "FOREIGN KEY (shop_id, article) REFERENCES shop_products(shop_id, article) ON UPDATE CASCADE ON DELETE CASCADE,"
+                        "FOREIGN KEY (department_id) REFERENCES departments(id) ON UPDATE CASCADE ON DELETE CASCADE"
                         ");"))
         {
             qDebug() << "[addTables]" << query.lastError().text();
@@ -355,8 +375,7 @@ void TradeManagementDB::addRowToShopProducts()
 
         //Добавлем новую запись
         query.prepare("INSERT INTO shop_products (shop_id, article, name, type, price)"
-                      "VALUES (:shop_id, '000', 'Именование товара', "
-                      "'Тип товара', '0.00');");
+                      "VALUES (:shop_id, '000', 'Именование товара', 'Тип товара', 0.00);");
         query.bindValue(":shop_id", shop_id);
 
         if (!query.exec())
@@ -400,7 +419,7 @@ void TradeManagementDB::addRowToBaseProducts()
         //Добавлем новую запись
         query.prepare("INSERT INTO base_products (base_id, article, name, type, price, count)"
                       "VALUES (:base_id, '000', 'Именование товара', "
-                      "'Тип товара', '0.00', '0');");
+                      "'Тип товара', 0.00, 0);");
         query.bindValue(":base_id", base_id);
 
         if (!query.exec())
@@ -416,13 +435,18 @@ void TradeManagementDB::addRowToBaseProducts()
         emit errorMsg("[addRowToBaseProducts] transaction failed");
 }
 
+void TradeManagementDB::addRowToDepartmentProducts()
+{
+
+}
+
 void TradeManagementDB::onUpdate(int row, QSqlRecord &record)
 {
     for (int i = 0; i < record.count(); ++i)
     {
-        if (record.field(i).name().contains("id"))
+        if (record.field(i).name().contains("id") || record.field(i).name().contains("article"))
         {
-            record.setGenerated(i, false);
+            //record.setGenerated(i, false);
         }
     }
 }
