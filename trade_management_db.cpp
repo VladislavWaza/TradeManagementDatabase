@@ -154,7 +154,7 @@ void TradeManagementDB::addTables()
         QSqlQuery query(m_db);
         //Создание таблицы оптовых баз
         if (!query.exec("CREATE TABLE IF NOT EXISTS wholesale_bases ("
-                        "id INTEGER NOT NULL PRIMARY KEY,"
+                        "id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,"
                         "name VARCHAR(255) NOT NULL CHECK (LENGTH(name) >= 3),"
                         "actual_address VARCHAR(255) NOT NULL CHECK (LENGTH(actual_address) >= 7),"
                         "ogrn VARCHAR(15) NOT NULL check(ogrn not like '%[^0-9]%' AND (LENGTH(ogrn) = 15 OR LENGTH(ogrn) = 13)),"
@@ -165,7 +165,7 @@ void TradeManagementDB::addTables()
         }
         //Создание таблицы магазинов
         if (!query.exec("CREATE TABLE IF NOT EXISTS shops ("
-                        "id INTEGER NOT NULL PRIMARY KEY,"
+                        "id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,"
                         "name VARCHAR(255) NOT NULL CHECK (LENGTH(name) >= 3),"
                         "class VARCHAR(255) NOT NULL CHECK (LENGTH(class) >= 3),"
                         "actual_address VARCHAR(255) NOT NULL CHECK (LENGTH(actual_address) >= 7),"
@@ -252,17 +252,9 @@ void TradeManagementDB::addRowToShops()
     if (m_db.transaction())
     {
         QSqlQuery query(m_db);
-        if (!query.exec("SELECT COUNT(id) from shops;"))
-        {
-            emit errorMsg("[addRowToShops] " + query.lastError().text());
-        }
-        int count = 0;
-        while (query.next())
-            count = query.value(0).toInt();
-        query.prepare("INSERT INTO shops (id, name, class, actual_address, ogrn, inn, kpp, base_id)"
-                      "VALUES (:new_id, 'Название магазина', 'Класс магазина', 'г. Москва',"
+        query.prepare("INSERT INTO shops (name, class, actual_address, ogrn, inn, kpp, base_id)"
+                      "VALUES ('Название магазина', 'Класс магазина', 'г. Москва',"
                       "'123456789012345', '123456789012', '123456789', :base_id);");
-        query.bindValue(":new_id", count + 1);
         query.bindValue(":base_id", base_id);
 
         if (!query.exec())
@@ -283,18 +275,9 @@ void TradeManagementDB::addRowToWholesaleBases()
     if (m_db.transaction())
     {
         QSqlQuery query(m_db);
-        if (!query.exec("SELECT COUNT(id) from wholesale_bases;"))
-        {
-            emit errorMsg("[addRowToWholesaleBases] " + query.lastError().text());
-        }
-        int count = 0;
-        while (query.next())
-            count = query.value(0).toInt();
-        query.prepare("INSERT INTO wholesale_bases (id, name, actual_address, ogrn, inn, kpp)"
-                      "VALUES (:new_id, 'Название базы', 'г. Москва',"
+        query.prepare("INSERT INTO wholesale_bases (name, actual_address, ogrn, inn, kpp)"
+                      "VALUES ('Название базы', 'г. Москва',"
                       "'123456789012345', '123456789012', '123456789');");
-        query.bindValue(":new_id", count + 1);
-
         if (!query.exec())
         {
             emit errorMsg("[addRowToWholesaleBases] " + query.lastError().text());
@@ -318,8 +301,8 @@ void TradeManagementDB::addRowToDepartments()
     if (m_db.transaction())
     {
         QSqlQuery query(m_db);
-        //Считаем число отделов в этом магазине
-        query.prepare("SELECT COUNT(*) FROM departments WHERE (shop_id = :shop_id)");
+        //Находим максимальный номер отдела в этом магазине
+        query.prepare("SELECT MAX(id) FROM departments WHERE (shop_id = :shop_id)");
         query.bindValue(":shop_id", shop_id);
         if (!query.exec())
         {
@@ -333,7 +316,7 @@ void TradeManagementDB::addRowToDepartments()
         query.prepare("INSERT INTO departments (id, shop_id, name, manager)"
                       "VALUES (:id, :shop_id, 'Именование отдела', 'Заведующий');");
         query.bindValue(":shop_id", shop_id);
-        query.bindValue(":id", count);
+        query.bindValue(":id", count + 1);
 
         if (!query.exec())
         {
