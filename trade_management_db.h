@@ -47,7 +47,7 @@ private:
     void addRowToBaseProducts();
     void addRowToDepartmentProducts();
 
-    //Возвращает запись из таблицы table_type
+    //Возвращает запись из таблицы table_type которую выбирает пользователь в окне SelectDialog
     QSqlRecord recordFromSelectDialog(const TableType& table_type, const QString& title = QString());
 signals:
     void errorMsg(const QString& msg);

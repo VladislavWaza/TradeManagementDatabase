@@ -20,33 +20,31 @@ public:
 public slots:
     void onAuthorization(const QString &login, const QString &pass);
 private slots:
-    void on_showShops_triggered();
+    //Слот выводящий ошибку которая испускается по сигналу от TradeManagementDB
     void onDatabaseError(const QString& msg);
+    //Cлоты обработки нажатий кнопок удаления/добавления строки, обновления/сохранения таблицы
     void on_addRow_clicked();
+    void on_deleteRow_clicked();
     void on_save_clicked();
     void on_update_clicked();
 
+    //Слоты показа таблиц
+    void on_showShops_triggered();
     void on_showBases_triggered();
-
     void on_showBasesProds_triggered();
-
     void on_showDepartments_triggered();
-
     void on_showShopProds_triggered();
-
     void on_showDepProds_triggered();
 
-    void on_deleteRow_clicked();
-
+    //Слоты показа информации о товарах
     void on_prodsOnBase_triggered();
-
     void on_prodsOnShop_triggered();
-
     void on_prodsOnDep_triggered();
 
 private:
     void changeAccessRights();
 
+    void createShowingForm(QSqlTableModel*& model, const QString &title);
 
     enum class UserType {Unauthorized, Admin};
 

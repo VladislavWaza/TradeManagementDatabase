@@ -47,6 +47,13 @@ void MainWindow::changeAccessRights()
     //TODO!
 }
 
+void MainWindow::createShowingForm(QSqlTableModel *&model, const QString& title)
+{
+    ShowingForm* showing_form = new ShowingForm(model);
+    showing_form->setWindowTitle(title);
+    showing_form->show();
+}
+
 void MainWindow::onDatabaseError(const QString &msg)
 {
     QMessageBox::critical(this, QString("ОШИБКА!"), msg);
@@ -137,29 +144,20 @@ void MainWindow::on_prodsOnBase_triggered()
 {
     QSqlTableModel* model = nullptr;
     m_db.showProds(TradeManagementDB::TableType::WholesaleBases, model);
-    //Создаем и запускаем окно
-    ShowingForm* showing_form = new ShowingForm(model);
-    showing_form->setWindowTitle("Информация о товарах");
-    showing_form->show();
+    createShowingForm(model, "Информация о товарах");
 }
 
 void MainWindow::on_prodsOnShop_triggered()
 {
     QSqlTableModel* model = nullptr;
     m_db.showProds(TradeManagementDB::TableType::Shops, model);
-    //Создаем и запускаем окно
-    ShowingForm* showing_form = new ShowingForm(model);
-    showing_form->setWindowTitle("Информация о товарах");
-    showing_form->show();
+    createShowingForm(model, "Информация о товарах");
 }
 
 void MainWindow::on_prodsOnDep_triggered()
 {
     QSqlTableModel* model = nullptr;
     m_db.showProds(TradeManagementDB::TableType::Departments, model);
-    //Создаем и запускаем окно
-    ShowingForm* showing_form = new ShowingForm(model);
-    showing_form->setWindowTitle("Информация о товарах");
-    showing_form->show();
+    createShowingForm(model, "Информация о товарах");
 }
 

@@ -1,6 +1,5 @@
 #include "trade_management_db.h"
 #include "selectdialog.h"
-#include "showingform.h"
 
 #include <QSqlError>
 #include <QSqlQuery>
@@ -153,6 +152,7 @@ void TradeManagementDB::deleteRow()
         emit errorMsg("[deleteRow] transaction failed");
 }
 
+//Обработка различных запросов
 void TradeManagementDB::showProds(const TableType &table_type, QSqlTableModel *&model)
 {
     if (table_type == TableType::Shops || table_type == TableType::Departments || table_type == TableType::WholesaleBases)
@@ -189,6 +189,7 @@ void TradeManagementDB::showProds(const TableType &table_type, QSqlTableModel *&
                 model->setEditStrategy(QSqlTableModel::OnManualSubmit);
                 model->setTable("prods_info");
                 model->select();
+                //Деструктор модели надо вызывать отдельно
             }
             if (m_db.commit())
                 return;
@@ -326,6 +327,7 @@ void TradeManagementDB::addTables()
         qDebug() << "[addTables] transaction failed";
 }
 
+//Создаение новых строк
 void TradeManagementDB::addRowToShops()
 {
     //Принимаем связанную с магазином базу
