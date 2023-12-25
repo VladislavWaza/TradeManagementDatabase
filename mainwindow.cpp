@@ -161,3 +161,11 @@ void MainWindow::on_prodsOnDep_triggered()
     createShowingForm(model, "Информация о товарах");
 }
 
+
+void MainWindow::on_prodsOnShopDeps_triggered()
+{
+    QSqlTableModel* model = nullptr;
+    m_db.showShopProds(model);
+    createShowingForm(model, "Информация о товарах");
+}
+

@@ -204,6 +204,45 @@ void TradeManagementDB::showProds(const TableType &table_type, QSqlTableModel *&
         emit errorMsg("[showProds] Не корректный тип таблицы!");
 }
 
+void TradeManagementDB::showShopProds(QSqlTableModel *&model)
+{
+    QSqlRecord record = recordFromSelectDialog(TableType::Shops, "Выберите запись");
+    if (record == QSqlRecord())
+        return;
+
+    if (m_db.transaction())
+    {
+        QSqlQuery query(m_db);
+        query.exec("DROP TABLE prods_info;");
+        QString query_text = "CREATE TABLE prods_info AS "
+                            "SELECT sp.shop_id, dp.department_id, sp.article, sp.name, sp.prod_type, sp.price, dp.quantity "
+                            "FROM " + tableTypeToTableName(TableType::ShopProducts) + " sp "
+                            "JOIN " + tableTypeToTableName(TableType::DepartmentProducts) + " dp "
+                            "ON sp.shop_id = dp.shop_id AND sp.article = dp.article "
+                            "WHERE dp.shop_id = " + record.value("id").toString() + " "
+                            "GROUP BY sp.shop_id, dp.department_id, sp.article, sp.name, sp.prod_type, sp.price, dp.quantity;";
+        if (!query.exec(query_text))
+        {
+            emit errorMsg("[showProds] " + query.lastError().text());
+        }
+        else
+        {
+            //Создаем модель
+            model = new QSqlTableModel(nullptr, m_db);
+            model->setEditStrategy(QSqlTableModel::OnManualSubmit);
+            model->setTable("prods_info");
+            model->select();
+            //Деструктор модели надо вызывать отдельно
+        }
+        if (m_db.commit())
+            return;
+        else
+            emit errorMsg("[showProds] commit failed");
+    }
+    else
+        emit errorMsg("[showProds] transaction failed");
+}
+
 void TradeManagementDB::getModel(QSqlTableModel *&model)
 {
     //Проверяем выбрана ли активная таблица
@@ -266,7 +305,7 @@ void TradeManagementDB::addTables()
                         "base_id INTEGER NOT NULL,"
                         "article VARCHAR(50) NOT NULL CHECK (LENGTH(article) >= 1),"
                         "name VARCHAR(255) NOT NULL CHECK (LENGTH(name) >= 3),"
-                        "type VARCHAR(255) NOT NULL CHECK (LENGTH(type) >= 3),"
+                        "prod_type VARCHAR(255) NOT NULL CHECK (LENGTH(prod_type) >= 3),"
                         "price DECIMAL(10, 2) NOT NULL CHECK (price >= 0),"
                         "quantity INTEGER NOT NULL CHECK (quantity >= 0),"
                         "PRIMARY KEY (base_id, article),"
@@ -294,7 +333,7 @@ void TradeManagementDB::addTables()
                         "shop_id INTEGER NOT NULL,"
                         "article VARCHAR(50) NOT NULL CHECK (LENGTH(article) >= 1),"
                         "name VARCHAR(255) NOT NULL CHECK (LENGTH(name) >= 3),"
-                        "type VARCHAR(255) NOT NULL CHECK (LENGTH(type) >= 3),"
+                        "prod_type VARCHAR(255) NOT NULL CHECK (LENGTH(prod_type) >= 3),"
                         "price DECIMAL(10, 2) NOT NULL CHECK (price >= 0),"
                         "PRIMARY KEY (shop_id, article),"
                         "FOREIGN KEY (shop_id) REFERENCES shops(id) ON UPDATE CASCADE ON DELETE CASCADE"
@@ -452,7 +491,7 @@ void TradeManagementDB::addRowToShopProducts()
         }
 
         //Добавлем новую запись
-        query.prepare("INSERT INTO shop_products (shop_id, article, name, type, price)"
+        query.prepare("INSERT INTO shop_products (shop_id, article, name, prod_type, price)"
                       "VALUES (:shop_id, '000', 'Именование товара', 'Тип товара', 0.00);");
         query.bindValue(":shop_id", shop_id);
 
@@ -498,7 +537,7 @@ void TradeManagementDB::addRowToBaseProducts()
         }
 
         //Добавлем новую запись
-        query.prepare("INSERT INTO base_products (base_id, article, name, type, price, quantity)"
+        query.prepare("INSERT INTO base_products (base_id, article, name, prod_type, price, quantity)"
                       "VALUES (:base_id, '000', 'Именование товара', "
                       "'Тип товара', 0.00, 0);");
         query.bindValue(":base_id", base_id);

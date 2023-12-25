@@ -79,8 +79,9 @@
     <addaction name="prodsOnBase"/>
     <addaction name="prodsOnShop"/>
     <addaction name="prodsOnDep"/>
-    <addaction name="managers"/>
+    <addaction name="prodsOnShopDeps"/>
     <addaction name="identicalProds"/>
+    <addaction name="managers"/>
    </widget>
    <addaction name="menu"/>
    <addaction name="menu_2"/>
@@ -131,14 +132,19 @@
     <string>О товарах в отделе</string>
    </property>
   </action>
-  <action name="managers">
+  <action name="prodsOnShopDeps">
    <property name="text">
-    <string>О заведующих</string>
+    <string>О товарах в отделах магазина</string>
    </property>
   </action>
   <action name="identicalProds">
    <property name="text">
     <string>О одинаковых товарах в магазине</string>
+   </property>
+  </action>
+  <action name="managers">
+   <property name="text">
+    <string>О заведующих</string>
    </property>
   </action>
  </widget>

@@ -29,6 +29,8 @@ public:
     void deleteRow();
     //Выводит информацию о товарах внутри одного магазина/отдела/базы
     void showProds(const TableType& table_type, QSqlTableModel *&model);
+    //Выводит информацию о товарах внутри всех отделов одного магазина
+    void showShopProds(QSqlTableModel *&model);
 private:
     QSqlDatabase m_db;
     TableType m_table_type = TableType::None;
