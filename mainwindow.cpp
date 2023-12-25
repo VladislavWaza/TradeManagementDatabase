@@ -144,21 +144,21 @@ void MainWindow::on_prodsOnBase_triggered()
 {
     QSqlTableModel* model = nullptr;
     m_db.showProds(TradeManagementDB::TableType::WholesaleBases, model);
-    createShowingForm(model, "Информация о товарах");
+    createShowingForm(model, "Информация о товарах на базе");
 }
 
 void MainWindow::on_prodsOnShop_triggered()
 {
     QSqlTableModel* model = nullptr;
     m_db.showProds(TradeManagementDB::TableType::Shops, model);
-    createShowingForm(model, "Информация о товарах");
+    createShowingForm(model, "Информация о товарах в магазине");
 }
 
 void MainWindow::on_prodsOnDep_triggered()
 {
     QSqlTableModel* model = nullptr;
     m_db.showProds(TradeManagementDB::TableType::Departments, model);
-    createShowingForm(model, "Информация о товарах");
+    createShowingForm(model, "Информация о товарах в отделе");
 }
 
 
@@ -166,6 +166,14 @@ void MainWindow::on_prodsOnShopDeps_triggered()
 {
     QSqlTableModel* model = nullptr;
     m_db.showShopProds(model);
-    createShowingForm(model, "Информация о товарах");
+    createShowingForm(model, "Информация о товарах во всех отделах магазина");
+}
+
+
+void MainWindow::on_identicalProds_triggered()
+{
+    QSqlTableModel* model = nullptr;
+    m_db.showIdenticalProds(model);
+    createShowingForm(model, "Информация о одинаковых товарах в магазине");
 }
 

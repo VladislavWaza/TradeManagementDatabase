@@ -31,6 +31,8 @@ public:
     void showProds(const TableType& table_type, QSqlTableModel *&model);
     //Выводит информацию о товарах внутри всех отделов одного магазина
     void showShopProds(QSqlTableModel *&model);
+    //Выводит информацию о одинаковых товарах внутри одного магазина
+    void showIdenticalProds(QSqlTableModel *&model);
 private:
     QSqlDatabase m_db;
     TableType m_table_type = TableType::None;

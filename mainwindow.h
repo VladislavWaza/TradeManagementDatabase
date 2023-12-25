@@ -41,6 +41,7 @@ private slots:
     void on_prodsOnShop_triggered();
     void on_prodsOnDep_triggered();
     void on_prodsOnShopDeps_triggered();
+    void on_identicalProds_triggered();
 
 private:
     void changeAccessRights();
