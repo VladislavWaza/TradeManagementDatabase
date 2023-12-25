@@ -177,3 +177,11 @@ void MainWindow::on_identicalProds_triggered()
     createShowingForm(model, "Информация о одинаковых товарах в магазине");
 }
 
+
+void MainWindow::on_managers_triggered()
+{
+    QSqlTableModel* model = nullptr;
+    m_db.showManagers(model);
+    createShowingForm(model, "Информация о заведующих отделами магазина");
+}
+

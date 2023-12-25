@@ -215,15 +215,20 @@ void TradeManagementDB::showShopProds(QSqlTableModel *&model)
         QSqlQuery query(m_db);
         query.exec("DROP TABLE prods_info;");
         QString query_text = "CREATE TABLE prods_info AS "
-                            "SELECT sp.shop_id, dp.department_id, sp.article, sp.name, sp.prod_type, sp.price, dp.quantity "
+                            "SELECT sp.shop_id, sh.name AS shop_name, dp.department_id, d.name AS dep_name, "
+                            "sp.article, sp.name, sp.prod_type, sp.price, dp.quantity "
                             "FROM " + tableTypeToTableName(TableType::ShopProducts) + " sp "
                             "JOIN " + tableTypeToTableName(TableType::DepartmentProducts) + " dp "
                             "ON sp.shop_id = dp.shop_id AND sp.article = dp.article "
+                            "JOIN " + tableTypeToTableName(TableType::Shops) + " sh "
+                            "ON sp.shop_id = sh.id AND dp.shop_id = sh.id "
+                            "JOIN " + tableTypeToTableName(TableType::Departments) + " d "
+                            "ON d.shop_id = sh.id AND d.id = dp.department_id "
                             "WHERE dp.shop_id = " + record.value("id").toString() + " "
-                            "GROUP BY sp.shop_id, dp.department_id, sp.article, sp.name, sp.prod_type, sp.price, dp.quantity;";
+                            "GROUP BY sp.shop_id, shop_name, dp.department_id, dep_name, sp.article, sp.name, sp.prod_type, sp.price, dp.quantity;";
         if (!query.exec(query_text))
         {
-            emit errorMsg("[showProds] " + query.lastError().text());
+            emit errorMsg("[showShopProds] " + query.lastError().text());
         }
         else
         {
@@ -237,10 +242,10 @@ void TradeManagementDB::showShopProds(QSqlTableModel *&model)
         if (m_db.commit())
             return;
         else
-            emit errorMsg("[showProds] commit failed");
+            emit errorMsg("[showShopProds] commit failed");
     }
     else
-        emit errorMsg("[showProds] transaction failed");
+        emit errorMsg("[showShopProds] transaction failed");
 }
 
 void TradeManagementDB::showIdenticalProds(QSqlTableModel *&model)
@@ -255,7 +260,8 @@ void TradeManagementDB::showIdenticalProds(QSqlTableModel *&model)
         query.exec("DROP TABLE prods_info;");
 
         QString query_text = "CREATE TABLE prods_info AS "
-                            "SELECT sp.shop_id, dp.department_id, sp.article, sp.name, sp.prod_type, sp.price, dp.quantity "
+                            "SELECT sp.shop_id, sh.name AS shop_name, dp.department_id, d.name AS dep_name, "
+                            "sp.article, sp.name, sp.prod_type, sp.price, dp.quantity "
                             "FROM " + tableTypeToTableName(TableType::ShopProducts) + " sp "
                             "JOIN ( "
                             "SELECT article, shop_id FROM " + tableTypeToTableName(TableType::DepartmentProducts) + " "
@@ -265,12 +271,16 @@ void TradeManagementDB::showIdenticalProds(QSqlTableModel *&model)
                             "ON sp.shop_id = sub.shop_id AND sp.article = sub.article "
                             "JOIN " + tableTypeToTableName(TableType::DepartmentProducts) + " dp "
                             "ON sp.shop_id = dp.shop_id AND sp.article = dp.article "
+                            "JOIN " + tableTypeToTableName(TableType::Shops) + " sh "
+                            "ON sp.shop_id = sh.id AND dp.shop_id = sh.id "
+                            "JOIN " + tableTypeToTableName(TableType::Departments) + " d "
+                            "ON d.shop_id = sh.id AND d.id = dp.department_id "
                             "WHERE dp.shop_id = " + record.value("id").toString() + " "
                             "GROUP BY sp.shop_id, dp.department_id, sp.article, sp.name, sp.prod_type, sp.price, dp.quantity;";
 
         if (!query.exec(query_text))
         {
-            emit errorMsg("[showProds] " + query.lastError().text());
+            emit errorMsg("[showIdenticalProds] " + query.lastError().text());
         }
         else
         {
@@ -284,10 +294,52 @@ void TradeManagementDB::showIdenticalProds(QSqlTableModel *&model)
         if (m_db.commit())
             return;
         else
-            emit errorMsg("[showProds] commit failed");
+            emit errorMsg("[showIdenticalProds] commit failed");
     }
     else
-        emit errorMsg("[showProds] transaction failed");
+        emit errorMsg("[showIdenticalProds] transaction failed");
+}
+
+void TradeManagementDB::showManagers(QSqlTableModel *&model)
+{
+    QSqlRecord record = recordFromSelectDialog(TableType::Shops, "Выберите запись");
+    if (record == QSqlRecord())
+        return;
+
+    if (m_db.transaction())
+    {
+        QSqlQuery query(m_db);
+        query.exec("DROP TABLE info_table;");
+
+        QString query_text = "CREATE TABLE info_table AS "
+                            "SELECT sh.id AS shop_id, sh.name AS shop_name, d.id AS department_id, "
+                            "d.name AS department_name, d.manager "
+                            "FROM " + tableTypeToTableName(TableType::Shops) + " sh "
+                            "JOIN " + tableTypeToTableName(TableType::Departments) + " d "
+                            "ON d.shop_id = sh.id "
+                            "WHERE d.shop_id = " + record.value("id").toString() + " "
+                            "GROUP BY shop_id, shop_name, department_id, department_name, d.manager;";
+
+        if (!query.exec(query_text))
+        {
+            emit errorMsg("[showManagers] " + query.lastError().text());
+        }
+        else
+        {
+            //Создаем модель
+            model = new QSqlTableModel(nullptr, m_db);
+            model->setEditStrategy(QSqlTableModel::OnManualSubmit);
+            model->setTable("info_table");
+            model->select();
+            //Деструктор модели надо вызывать отдельно
+        }
+        if (m_db.commit())
+            return;
+        else
+            emit errorMsg("[showManagers] commit failed");
+    }
+    else
+        emit errorMsg("[showManagers] transaction failed");
 }
 
 //Выдача модели активной таблицы с возможностью изменения

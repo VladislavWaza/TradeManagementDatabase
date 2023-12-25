@@ -33,6 +33,10 @@ public:
     void showShopProds(QSqlTableModel *&model);
     //Выводит информацию о одинаковых товарах внутри одного магазина
     void showIdenticalProds(QSqlTableModel *&model);
+    //Выводит информацию о заведующих отделами магазина
+    void showManagers(QSqlTableModel *&model);
+
+
 private:
     QSqlDatabase m_db;
     TableType m_table_type = TableType::None;

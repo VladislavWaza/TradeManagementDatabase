@@ -43,6 +43,9 @@ private slots:
     void on_prodsOnShopDeps_triggered();
     void on_identicalProds_triggered();
 
+    //Cлот показа информации о заведующих
+    void on_managers_triggered();
+
 private:
     void changeAccessRights();
 
