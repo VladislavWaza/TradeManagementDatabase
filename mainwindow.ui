@@ -82,6 +82,7 @@
     <addaction name="prodsOnShopDeps"/>
     <addaction name="identicalProds"/>
     <addaction name="managers"/>
+    <addaction name="missingProds"/>
    </widget>
    <addaction name="menu"/>
    <addaction name="menu_2"/>
@@ -145,6 +146,11 @@
   <action name="managers">
    <property name="text">
     <string>О заведующих</string>
+   </property>
+  </action>
+  <action name="missingProds">
+   <property name="text">
+    <string>О отсутствующих товарах в магазине, которые можно заказать на базе </string>
    </property>
   </action>
  </widget>

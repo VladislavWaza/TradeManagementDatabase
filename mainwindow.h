@@ -42,6 +42,7 @@ private slots:
     void on_prodsOnDep_triggered();
     void on_prodsOnShopDeps_triggered();
     void on_identicalProds_triggered();
+    void on_missingProds_triggered();
 
     //Cлот показа информации о заведующих
     void on_managers_triggered();

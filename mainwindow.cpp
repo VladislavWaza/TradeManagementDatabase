@@ -185,3 +185,11 @@ void MainWindow::on_managers_triggered()
     createShowingForm(model, "Информация о заведующих отделами магазина");
 }
 
+
+void MainWindow::on_missingProds_triggered()
+{
+    QSqlTableModel* model = nullptr;
+    m_db.showMissingProds(model);
+    createShowingForm(model, "Информация о отсутствующих товарах в магазине, которые можно заказать на базе");
+}
+

@@ -165,19 +165,27 @@ void TradeManagementDB::showProds(const TableType &table_type, QSqlTableModel *&
         {
             QSqlQuery query(m_db);
             query.exec("DROP TABLE prods_info;");
-            QString query_text = "CREATE TABLE prods_info AS SELECT * FROM ";
+            QString query_text;
 
             if (table_type == TableType::Shops)
-                query_text += tableTypeToTableName(TableType::ShopProducts) + " WHERE shop_id = "
-                        + record.value("id").toString() + ';';
-            if (table_type == TableType::WholesaleBases)
-                query_text += tableTypeToTableName(TableType::BaseProducts) + " WHERE base_id = "
-                        + record.value("id").toString() + ';';
-            if (table_type == TableType::Departments)
-                query_text += tableTypeToTableName(TableType::DepartmentProducts) + " WHERE shop_id = "
-                        + record.value("shop_id").toString() + " AND department_id = "
-                        + record.value("id").toString() + ';';
+                query_text = "CREATE TABLE prods_info AS SELECT * "
+                             "FROM " + tableTypeToTableName(TableType::ShopProducts) + " "
+                             "WHERE shop_id = " + record.value("id").toString() + ';';
 
+            if (table_type == TableType::WholesaleBases)
+                query_text = "CREATE TABLE prods_info AS SELECT * "
+                             "FROM " + tableTypeToTableName(TableType::BaseProducts) + " "
+                             "WHERE base_id = " + record.value("id").toString() + ';';
+
+            if (table_type == TableType::Departments)
+                query_text = "CREATE TABLE prods_info AS "
+                             "SELECT dp.shop_id, dp.department_id, dp.article, sp.name, "
+                             "sp.prod_type, sp.variety, sp.price, dp.quantity "
+                             "FROM " + tableTypeToTableName(TableType::DepartmentProducts) + " dp "
+                             "JOIN " + tableTypeToTableName(TableType::ShopProducts) + " sp "
+                             "ON sp.shop_id = dp.shop_id AND sp.article = dp.article "
+                             "WHERE dp.shop_id = " + record.value("shop_id").toString() + " "
+                             "AND dp.department_id = " + record.value("id").toString() + ';';
             if (!query.exec(query_text))
             {
                 emit errorMsg("[showProds] " + query.lastError().text());
@@ -216,7 +224,7 @@ void TradeManagementDB::showShopProds(QSqlTableModel *&model)
         query.exec("DROP TABLE prods_info;");
         QString query_text = "CREATE TABLE prods_info AS "
                             "SELECT sp.shop_id, sh.name AS shop_name, dp.department_id, d.name AS dep_name, "
-                            "sp.article, sp.name, sp.prod_type, sp.price, dp.quantity "
+                            "sp.article, sp.name, sp.prod_type, sp.variety, sp.price, dp.quantity "
                             "FROM " + tableTypeToTableName(TableType::ShopProducts) + " sp "
                             "JOIN " + tableTypeToTableName(TableType::DepartmentProducts) + " dp "
                             "ON sp.shop_id = dp.shop_id AND sp.article = dp.article "
@@ -225,7 +233,8 @@ void TradeManagementDB::showShopProds(QSqlTableModel *&model)
                             "JOIN " + tableTypeToTableName(TableType::Departments) + " d "
                             "ON d.shop_id = sh.id AND d.id = dp.department_id "
                             "WHERE dp.shop_id = " + record.value("id").toString() + " "
-                            "GROUP BY sp.shop_id, shop_name, dp.department_id, dep_name, sp.article, sp.name, sp.prod_type, sp.price, dp.quantity;";
+                            "GROUP BY sp.shop_id, shop_name, dp.department_id, dep_name, sp.article, sp.name, "
+                            "sp.prod_type, sp.variety, sp.price, dp.quantity;";
         if (!query.exec(query_text))
         {
             emit errorMsg("[showShopProds] " + query.lastError().text());
@@ -261,7 +270,7 @@ void TradeManagementDB::showIdenticalProds(QSqlTableModel *&model)
 
         QString query_text = "CREATE TABLE prods_info AS "
                             "SELECT sp.shop_id, sh.name AS shop_name, dp.department_id, d.name AS dep_name, "
-                            "sp.article, sp.name, sp.prod_type, sp.price, dp.quantity "
+                            "sp.article, sp.name, sp.prod_type, sp.variety, sp.price, dp.quantity "
                             "FROM " + tableTypeToTableName(TableType::ShopProducts) + " sp "
                             "JOIN ( "
                             "SELECT article, shop_id FROM " + tableTypeToTableName(TableType::DepartmentProducts) + " "
@@ -276,7 +285,8 @@ void TradeManagementDB::showIdenticalProds(QSqlTableModel *&model)
                             "JOIN " + tableTypeToTableName(TableType::Departments) + " d "
                             "ON d.shop_id = sh.id AND d.id = dp.department_id "
                             "WHERE dp.shop_id = " + record.value("id").toString() + " "
-                            "GROUP BY sp.shop_id, dp.department_id, sp.article, sp.name, sp.prod_type, sp.price, dp.quantity;";
+                            "GROUP BY sp.shop_id, dp.department_id, sp.article, sp.name, sp.prod_type, "
+                            "sp.variety, sp.price, dp.quantity;";
 
         if (!query.exec(query_text))
         {
@@ -340,6 +350,52 @@ void TradeManagementDB::showManagers(QSqlTableModel *&model)
     }
     else
         emit errorMsg("[showManagers] transaction failed");
+}
+
+void TradeManagementDB::showMissingProds(QSqlTableModel *&model)
+{
+    QSqlRecord record = recordFromSelectDialog(TableType::Shops, "Выберите запись");
+    if (record == QSqlRecord())
+        return;
+
+    if (m_db.transaction())
+    {
+        QSqlQuery query(m_db);
+        query.exec("DROP TABLE prods_info;");
+        QString query_text = "CREATE TABLE prods_info AS "
+                            "SELECT sp.shop_id, sh.name AS shop_name, dp.department_id, d.name AS dep_name, "
+                            "sp.article, sp.name, sp.prod_type, sp.variety, sp.price, dp.quantity "
+                            "FROM " + tableTypeToTableName(TableType::ShopProducts) + " sp "
+                            "JOIN " + tableTypeToTableName(TableType::DepartmentProducts) + " dp "
+                            "ON sp.shop_id = dp.shop_id AND sp.article = dp.article "
+                            "JOIN " + tableTypeToTableName(TableType::Shops) + " sh "
+                            "ON sp.shop_id = sh.id AND dp.shop_id = sh.id "
+                            "JOIN " + tableTypeToTableName(TableType::Departments) + " d "
+                            "ON d.shop_id = sh.id AND d.id = dp.department_id "
+                            "WHERE dp.shop_id = " + record.value("id").toString() + " AND dp.quantity = 0 "
+                            "GROUP BY sp.shop_id, shop_name, dp.department_id, dep_name, sp.article, sp.name, "
+                            "sp.prod_type, sp.variety, sp.price, dp.quantity;";
+
+        if (!query.exec(query_text))
+        {
+            emit errorMsg("[showMissingProds] " + query.lastError().text());
+        }
+        else
+        {
+            //Создаем модель
+            model = new QSqlTableModel(nullptr, m_db);
+            model->setEditStrategy(QSqlTableModel::OnManualSubmit);
+            model->setTable("prods_info");
+            model->select();
+            //Деструктор модели надо вызывать отдельно
+        }
+        if (m_db.commit())
+            return;
+        else
+            emit errorMsg("[showMissingProds] commit failed");
+    }
+    else
+        emit errorMsg("[showMissingProds] transaction failed");
 }
 
 //Выдача модели активной таблицы с возможностью изменения
@@ -407,6 +463,7 @@ void TradeManagementDB::addTables()
                         "article VARCHAR(50) NOT NULL CHECK (LENGTH(article) >= 1),"
                         "name VARCHAR(255) NOT NULL CHECK (LENGTH(name) >= 3),"
                         "prod_type VARCHAR(255) NOT NULL CHECK (LENGTH(prod_type) >= 3),"
+                        "variety VARCHAR(50) NOT NULL CHECK (LENGTH(variety) >= 1),"
                         "price DECIMAL(10, 2) NOT NULL CHECK (price >= 0),"
                         "quantity INTEGER NOT NULL CHECK (quantity >= 0),"
                         "PRIMARY KEY (base_id, article),"
@@ -435,6 +492,7 @@ void TradeManagementDB::addTables()
                         "article VARCHAR(50) NOT NULL CHECK (LENGTH(article) >= 1),"
                         "name VARCHAR(255) NOT NULL CHECK (LENGTH(name) >= 3),"
                         "prod_type VARCHAR(255) NOT NULL CHECK (LENGTH(prod_type) >= 3),"
+                        "variety VARCHAR(50) NOT NULL CHECK (LENGTH(variety) >= 1),"
                         "price DECIMAL(10, 2) NOT NULL CHECK (price >= 0),"
                         "PRIMARY KEY (shop_id, article),"
                         "FOREIGN KEY (shop_id) REFERENCES shops(id) ON UPDATE CASCADE ON DELETE CASCADE"
@@ -592,8 +650,8 @@ void TradeManagementDB::addRowToShopProducts()
         }
 
         //Добавлем новую запись
-        query.prepare("INSERT INTO shop_products (shop_id, article, name, prod_type, price)"
-                      "VALUES (:shop_id, '000', 'Именование товара', 'Тип товара', 0.00);");
+        query.prepare("INSERT INTO shop_products (shop_id, article, name, prod_type, price, variety) "
+                      "VALUES (:shop_id, '000', 'Именование товара', 'Тип товара', 0.00, '0');");
         query.bindValue(":shop_id", shop_id);
 
         if (!query.exec())
@@ -638,9 +696,9 @@ void TradeManagementDB::addRowToBaseProducts()
         }
 
         //Добавлем новую запись
-        query.prepare("INSERT INTO base_products (base_id, article, name, prod_type, price, quantity)"
+        query.prepare("INSERT INTO base_products (base_id, article, name, prod_type, price, quantity, variety)"
                       "VALUES (:base_id, '000', 'Именование товара', "
-                      "'Тип товара', 0.00, 0);");
+                      "'Тип товара', 0.00, 0, '0');");
         query.bindValue(":base_id", base_id);
 
         if (!query.exec())

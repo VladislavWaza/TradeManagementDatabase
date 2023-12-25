@@ -35,7 +35,8 @@ public:
     void showIdenticalProds(QSqlTableModel *&model);
     //Выводит информацию о заведующих отделами магазина
     void showManagers(QSqlTableModel *&model);
-
+    //Выводит информацию о отсутствующих товарах в магазине, которые можно заказать на базе
+    void showMissingProds(QSqlTableModel *&model);
 
 private:
     QSqlDatabase m_db;
