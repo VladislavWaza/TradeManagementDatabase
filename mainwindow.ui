@@ -84,8 +84,15 @@
     <addaction name="managers"/>
     <addaction name="missingProds"/>
    </widget>
+   <widget class="QMenu" name="menu_3">
+    <property name="title">
+     <string>Действия</string>
+    </property>
+    <addaction name="closeDep"/>
+   </widget>
    <addaction name="menu"/>
    <addaction name="menu_2"/>
+   <addaction name="menu_3"/>
   </widget>
   <widget class="QStatusBar" name="statusbar"/>
   <action name="showShops">
@@ -151,6 +158,16 @@
   <action name="missingProds">
    <property name="text">
     <string>О отсутствующих товарах в магазине, которые можно заказать на базе </string>
+   </property>
+  </action>
+  <action name="purchase">
+   <property name="text">
+    <string>Закупка товара</string>
+   </property>
+  </action>
+  <action name="closeDep">
+   <property name="text">
+    <string>Закрытие отдела</string>
    </property>
   </action>
  </widget>

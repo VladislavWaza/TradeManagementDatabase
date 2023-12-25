@@ -9,7 +9,7 @@ class TradeManagementDB : public QObject
 {
     Q_OBJECT
 public:
-    enum class TableType {None, Shops, WholesaleBases, Departments, ShopProducts, BaseProducts, DepartmentProducts};
+    enum class TableType {None, Shops, WholesaleBases, Departments, ShopProducts, BaseProducts, DepartmentProducts, Temp};
 
     explicit TradeManagementDB(QObject *parent = nullptr);
     //Функции передают результат от БД
@@ -37,6 +37,8 @@ public:
     void showManagers(QSqlTableModel *&model);
     //Выводит информацию о отсутствующих товарах в магазине, которые можно заказать на базе
     void showMissingProds(QSqlTableModel *&model);
+    //Закрытие отдела с передачей товаров другому
+    void closeDepartment();
 
 private:
     QSqlDatabase m_db;

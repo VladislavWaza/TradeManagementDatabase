@@ -193,3 +193,11 @@ void MainWindow::on_missingProds_triggered()
     createShowingForm(model, "Информация о отсутствующих товарах в магазине, которые можно заказать на базе");
 }
 
+void MainWindow::on_closeDep_triggered()
+{
+    if (QMessageBox::question(this, "Вы действительно хотите закрыть отдел?", "Товары будут переданы в другой отдел", "Да", "Нет") == 0)
+    {
+        m_db.closeDepartment();
+    }
+}
+

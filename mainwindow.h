@@ -47,6 +47,9 @@ private slots:
     //Cлот показа информации о заведующих
     void on_managers_triggered();
 
+    //Слот закрытия отдела
+    void on_closeDep_triggered();
+
 private:
     void changeAccessRights();
 

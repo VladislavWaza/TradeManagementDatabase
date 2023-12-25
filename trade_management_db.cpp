@@ -62,6 +62,8 @@ QString TradeManagementDB::tableTypeToTableName(const TableType &table_type)
         return "base_products";
     if (table_type == TableType::DepartmentProducts)
         return "department_products";
+    if (table_type == TableType::Temp)
+        return "temp_table";
     emit errorMsg(QString("[tableTypeToTableName] Неизвестный тип таблицы!"));
     return QString();
 }
@@ -214,7 +216,7 @@ void TradeManagementDB::showProds(const TableType &table_type, QSqlTableModel *&
 
 void TradeManagementDB::showShopProds(QSqlTableModel *&model)
 {
-    QSqlRecord record = recordFromSelectDialog(TableType::Shops, "Выберите запись");
+    QSqlRecord record = recordFromSelectDialog(TableType::Shops, "Выберите магазин");
     if (record == QSqlRecord())
         return;
 
@@ -259,7 +261,7 @@ void TradeManagementDB::showShopProds(QSqlTableModel *&model)
 
 void TradeManagementDB::showIdenticalProds(QSqlTableModel *&model)
 {
-    QSqlRecord record = recordFromSelectDialog(TableType::Shops, "Выберите запись");
+    QSqlRecord record = recordFromSelectDialog(TableType::Shops, "Выберите магазин");
     if (record == QSqlRecord())
         return;
 
@@ -312,7 +314,7 @@ void TradeManagementDB::showIdenticalProds(QSqlTableModel *&model)
 
 void TradeManagementDB::showManagers(QSqlTableModel *&model)
 {
-    QSqlRecord record = recordFromSelectDialog(TableType::Shops, "Выберите запись");
+    QSqlRecord record = recordFromSelectDialog(TableType::Shops, "Выберите магазин");
     if (record == QSqlRecord())
         return;
 
@@ -354,7 +356,7 @@ void TradeManagementDB::showManagers(QSqlTableModel *&model)
 
 void TradeManagementDB::showMissingProds(QSqlTableModel *&model)
 {
-    QSqlRecord record = recordFromSelectDialog(TableType::Shops, "Выберите запись");
+    QSqlRecord record = recordFromSelectDialog(TableType::Shops, "Выберите магазин");
     if (record == QSqlRecord())
         return;
 
@@ -396,6 +398,99 @@ void TradeManagementDB::showMissingProds(QSqlTableModel *&model)
     }
     else
         emit errorMsg("[showMissingProds] transaction failed");
+}
+
+void TradeManagementDB::closeDepartment()
+{
+    QSqlRecord record = recordFromSelectDialog(TableType::Departments, "Выберите отдел, которые хотите закрыть");
+    if (record == QSqlRecord())
+        return;
+    int shop_id = record.value("shop_id").toInt();
+    int closed_id = record.value("id").toInt();
+    if (m_db.transaction())
+    {
+        //Составляем таблицу отделов этого магазина, кроме удаляемого отдела
+        QSqlQuery query(m_db);
+        query.exec("DROP TABLE temp_table;");
+        QString query_text = "CREATE TABLE temp_table AS "
+                            "SELECT * "
+                            "FROM " + tableTypeToTableName(TableType::Departments) + " "
+                            "WHERE shop_id = " + QString::number(shop_id) + " "
+                            "AND id != " + QString::number(closed_id) + ";";
+        if (!query.exec(query_text))
+        {
+            emit errorMsg("[closeDepartment] " + query.lastError().text());
+        }
+        record = recordFromSelectDialog(TableType::Temp, "Выберите отдел, в который хотите передать товары");
+        if (record == QSqlRecord())
+            return;
+        int new_id = record.value("id").toInt();
+
+        //Составляем таблицу из товаров удаляемого отдела
+        query.exec("DROP TABLE temp_table;");
+        query_text = "CREATE TABLE temp_table AS "
+                     "SELECT quantity AS quantity2, department_id AS department_id2, article AS article2 "
+                     "FROM " + tableTypeToTableName(TableType::DepartmentProducts) + " "
+                     "WHERE department_id = " + QString::number(closed_id) + " "
+                     "AND shop_id = " + QString::number(shop_id) + ";";
+        if (!query.exec(query_text))
+        {
+            emit errorMsg("[closeDepartment] " + query.lastError().text());
+        }
+
+        //Переносим дублирующиеся товары
+        query_text = "UPDATE " + tableTypeToTableName(TableType::DepartmentProducts) + " "
+                     "SET quantity = quantity + dp1.quantity2 "
+                     "FROM " + tableTypeToTableName(TableType::Temp) + " AS dp1 "
+                     "WHERE article = dp1.article2 "
+                     "AND department_id = " + QString::number(new_id) + " "
+                     "AND dp1.department_id2 = " + QString::number(closed_id) + " "
+                     "AND shop_id = " + QString::number(shop_id) + ";";
+        if (!query.exec(query_text))
+        {
+            emit errorMsg("[closeDepartment] " + query.lastError().text());
+        }
+
+        //Удаляем записи товаров из удаляемого отдела, которые уже есть в отделе-приёмнике
+        query_text = "DELETE FROM " + tableTypeToTableName(TableType::DepartmentProducts) + " "
+                     "WHERE department_id = " + QString::number(closed_id) + " "
+                     "AND shop_id = " + QString::number(shop_id) + " "
+                     "AND article IN (SELECT DISTINCT article "
+                     "FROM " + tableTypeToTableName(TableType::DepartmentProducts) + " "
+                     "WHERE department_id = " + QString::number(new_id) + " "
+                     "AND shop_id = " + QString::number(shop_id) + ");";
+        if (!query.exec(query_text))
+        {
+            emit errorMsg("[closeDepartment] " + query.lastError().text());
+        }
+
+        //Перенесем оставшиеся товары
+        query.exec("DROP TABLE temp_table;");
+        query_text = "UPDATE " + tableTypeToTableName(TableType::DepartmentProducts) + " "
+                     "SET department_id = " + QString::number(new_id) + " "
+                     "WHERE department_id = " + QString::number(closed_id) + " "
+                     "AND shop_id = " + QString::number(shop_id) + ";";
+        if (!query.exec(query_text))
+        {
+            emit errorMsg("[closeDepartment] " + query.lastError().text());
+        }
+
+        //Удалим отдел
+        query_text = "DELETE FROM " + tableTypeToTableName(TableType::Departments) + " "
+                     "WHERE id = " + QString::number(closed_id) + " "
+                     "AND shop_id = " + QString::number(shop_id) + ";";
+        if (!query.exec(query_text))
+        {
+            emit errorMsg("[closeDepartment] " + query.lastError().text());
+        }
+
+        if (m_db.commit())
+            return;
+        else
+            emit errorMsg("[closeDepartment] commit failed");
+    }
+    else
+        emit errorMsg("[closeDepartment] transaction failed");
 }
 
 //Выдача модели активной таблицы с возможностью изменения
