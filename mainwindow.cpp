@@ -118,3 +118,14 @@ void MainWindow::on_update_clicked()
 }
 
 
+
+void MainWindow::on_deleteRow_clicked()
+{
+    if (QMessageBox::question(this, "Хотите удалить запись?", "Это также удалит все зависимые записи при их наличии", "Удалить", "Отмена") == 0)
+    {
+        m_db.deleteRow();
+        m_db.getModel(m_model);
+        m_ui->tableView->setModel(m_model);
+    }
+}
+

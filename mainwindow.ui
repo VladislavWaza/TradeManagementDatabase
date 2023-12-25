@@ -35,9 +35,9 @@
        </widget>
       </item>
       <item row="0" column="1">
-       <widget class="QPushButton" name="chageID">
+       <widget class="QPushButton" name="deleteRow">
         <property name="text">
-         <string>Пока не придумал</string>
+         <string>Удалить строку</string>
         </property>
        </widget>
       </item>

@@ -36,6 +36,8 @@ private slots:
 
     void on_showDepProds_triggered();
 
+    void on_deleteRow_clicked();
+
 private:
     void changeAccessRights();
 

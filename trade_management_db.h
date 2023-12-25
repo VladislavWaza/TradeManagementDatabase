@@ -25,6 +25,7 @@ public:
     void getModel(QSqlTableModel*& model);
     //Добавляет строку в активную таблицу
     void addRow();
+    void deleteRow();
 private:
     QSqlDatabase m_db;
     TableType m_table_type = TableType::None;
@@ -44,7 +45,7 @@ private:
     void addRowToDepartmentProducts();
 
     //Возвращает запись из таблицы table_type
-    QSqlRecord recordFromSelectDialog(const TableType& table_type);
+    QSqlRecord recordFromSelectDialog(const TableType& table_type, const QString& title = QString());
 signals:
     void errorMsg(const QString& msg);
 

@@ -88,6 +88,37 @@ void TradeManagementDB::addRow()
         emit errorMsg(QString("[addRow] Неизвестный тип таблицы!"));
 }
 
+void TradeManagementDB::deleteRow()
+{
+    QSqlRecord record = recordFromSelectDialog(m_table_type, "Выберите удаляемую запись");
+    if (record == QSqlRecord())
+        return;
+    if (m_db.transaction())
+    {
+        QSqlQuery query(m_db);
+        QString query_text = "DELETE FROM " + tableTypeToTableName(m_table_type) + " WHERE ";
+        for (int i = 0; i < record.count(); ++i)
+        {
+            query_text.append(record.fieldName(i) + "='" + record.value(i).toString() + "'");
+            if (i != record.count() - 1)
+                query_text.append(" AND ");
+        }
+        query_text.append(";");
+
+        if (!query.exec(query_text))
+        {
+            emit errorMsg("[deleteRow] " + query.lastError().text());
+        }
+
+        if (m_db.commit())
+            return;
+        else
+            emit errorMsg("[deleteRow] commit failed");
+    }
+    else
+        emit errorMsg("[deleteRow] transaction failed");
+}
+
 void TradeManagementDB::getModel(QSqlTableModel *&model)
 {
     //Проверяем выбрана ли активная таблица
@@ -115,7 +146,7 @@ void TradeManagementDB::getModel(QSqlTableModel *&model)
     }
 }
 
-QSqlRecord TradeManagementDB::recordFromSelectDialog(const TableType &table_type)
+QSqlRecord TradeManagementDB::recordFromSelectDialog(const TableType &table_type, const QString& title)
 {
     //Создаем модель
     QSqlTableModel* model = new QSqlTableModel(nullptr, m_db);
@@ -125,6 +156,8 @@ QSqlRecord TradeManagementDB::recordFromSelectDialog(const TableType &table_type
 
     //Создаем и запускаем окно
     SelectDialog* select_dialog = new SelectDialog(model);
+    if (title != QString())
+        select_dialog->setWindowTitle(title);
     connect(select_dialog, &SelectDialog::selected, this, &TradeManagementDB::onSelected);
     select_dialog->exec();
     disconnect(select_dialog, &SelectDialog::selected, this, &TradeManagementDB::onSelected);
