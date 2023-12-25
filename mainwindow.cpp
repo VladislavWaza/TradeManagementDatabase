@@ -191,7 +191,7 @@ void MainWindow::on_missingProds_triggered()
 {
     QSqlTableModel* model = nullptr;
     m_db.showMissingProds(model);
-    createShowingForm(model, "Информация о отсутствующих товарах в магазине, которые можно заказать на базе");
+    createShowingForm(model, "Информация о отсутствующих товарах в магазине");
 }
 
 void MainWindow::on_closeDep_triggered()
