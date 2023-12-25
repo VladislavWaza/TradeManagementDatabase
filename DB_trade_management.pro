@@ -14,18 +14,21 @@ SOURCES += \
     main.cpp \
     mainwindow.cpp \
     selectdialog.cpp \
+    showingform.cpp \
     trade_management_db.cpp
 
 HEADERS += \
     authorization.h \
     mainwindow.h \
     selectdialog.h \
+    showingform.h \
     trade_management_db.h
 
 FORMS += \
     authorization.ui \
     mainwindow.ui \
-    selectdialog.ui
+    selectdialog.ui \
+    showingform.ui
 
 # Default rules for deployment.
 qnx: target.path = /tmp/$${TARGET}/bin

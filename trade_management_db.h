@@ -25,7 +25,10 @@ public:
     void getModel(QSqlTableModel*& model);
     //Добавляет строку в активную таблицу
     void addRow();
+    //Удаляет строку из активной таблицы
     void deleteRow();
+    //Выводит информацию о товарах внутри одного магазина/отдела/базы
+    void showProds(const TableType& table_type, QSqlTableModel *&model);
 private:
     QSqlDatabase m_db;
     TableType m_table_type = TableType::None;

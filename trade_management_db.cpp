@@ -1,5 +1,6 @@
 #include "trade_management_db.h"
 #include "selectdialog.h"
+#include "showingform.h"
 
 #include <QSqlError>
 #include <QSqlQuery>
@@ -66,6 +67,39 @@ QString TradeManagementDB::tableTypeToTableName(const TableType &table_type)
     return QString();
 }
 
+QSqlRecord TradeManagementDB::recordFromSelectDialog(const TableType &table_type, const QString& title)
+{
+    //Создаем модель
+    QSqlTableModel* model = new QSqlTableModel(nullptr, m_db);
+    model->setEditStrategy(QSqlTableModel::OnManualSubmit);
+    model->setTable(tableTypeToTableName(table_type));
+    model->select();
+
+    //Создаем и запускаем окно
+    SelectDialog* select_dialog = new SelectDialog(model);
+    if (title != QString())
+        select_dialog->setWindowTitle(title);
+    connect(select_dialog, &SelectDialog::selected, this, &TradeManagementDB::onSelected);
+    select_dialog->exec();
+    disconnect(select_dialog, &SelectDialog::selected, this, &TradeManagementDB::onSelected);
+
+    int row = m_selected_row;
+    //Проверяем результат на валидность
+    if (m_selected_row == -1)
+    {
+        emit errorMsg("[rowFromSelectDialog] Строка не выбрана!");
+        delete select_dialog;
+        delete model;
+        return QSqlRecord();
+    }
+    //Делаем его снова невалидным
+    m_selected_row = -1;
+    QSqlRecord res = model->record(row);
+    delete select_dialog;
+    delete model;
+    return res;
+}
+
 void TradeManagementDB::addRow()
 {
     if (m_table_type == TableType::None)
@@ -119,6 +153,56 @@ void TradeManagementDB::deleteRow()
         emit errorMsg("[deleteRow] transaction failed");
 }
 
+void TradeManagementDB::showProds(const TableType &table_type, QSqlTableModel *&model)
+{
+    if (table_type == TableType::Shops || table_type == TableType::Departments || table_type == TableType::WholesaleBases)
+    {
+        QSqlRecord record = recordFromSelectDialog(table_type, "Выберите запись");
+        if (record == QSqlRecord())
+            return;
+
+        if (m_db.transaction())
+        {
+            QSqlQuery query(m_db);
+            query.exec("DROP TABLE prods_info;");
+            QString query_text = "CREATE TABLE prods_info AS SELECT * FROM ";
+
+            if (table_type == TableType::Shops)
+                query_text += tableTypeToTableName(TableType::ShopProducts) + " WHERE shop_id = "
+                        + record.value("id").toString() + ';';
+            if (table_type == TableType::WholesaleBases)
+                query_text += tableTypeToTableName(TableType::BaseProducts) + " WHERE base_id = "
+                        + record.value("id").toString() + ';';
+            if (table_type == TableType::Departments)
+                query_text += tableTypeToTableName(TableType::DepartmentProducts) + " WHERE shop_id = "
+                        + record.value("shop_id").toString() + " AND department_id = "
+                        + record.value("id").toString() + ';';
+
+            if (!query.exec(query_text))
+            {
+                emit errorMsg("[showProds] " + query.lastError().text());
+            }
+            else
+            {
+                //Создаем модель
+                model = new QSqlTableModel(nullptr, m_db);
+                model->setEditStrategy(QSqlTableModel::OnManualSubmit);
+                model->setTable("prods_info");
+                model->select();
+            }
+            if (m_db.commit())
+                return;
+            else
+                emit errorMsg("[showProds] commit failed");
+        }
+        else
+            emit errorMsg("[showProds] transaction failed");
+
+    }
+    else
+        emit errorMsg("[showProds] Не корректный тип таблицы!");
+}
+
 void TradeManagementDB::getModel(QSqlTableModel *&model)
 {
     //Проверяем выбрана ли активная таблица
@@ -144,39 +228,6 @@ void TradeManagementDB::getModel(QSqlTableModel *&model)
         model->setTable(table_name);
         model->select();
     }
-}
-
-QSqlRecord TradeManagementDB::recordFromSelectDialog(const TableType &table_type, const QString& title)
-{
-    //Создаем модель
-    QSqlTableModel* model = new QSqlTableModel(nullptr, m_db);
-    model->setEditStrategy(QSqlTableModel::OnManualSubmit);
-    model->setTable(tableTypeToTableName(table_type));
-    model->select();
-
-    //Создаем и запускаем окно
-    SelectDialog* select_dialog = new SelectDialog(model);
-    if (title != QString())
-        select_dialog->setWindowTitle(title);
-    connect(select_dialog, &SelectDialog::selected, this, &TradeManagementDB::onSelected);
-    select_dialog->exec();
-    disconnect(select_dialog, &SelectDialog::selected, this, &TradeManagementDB::onSelected);
-
-    int row = m_selected_row;
-    //Проверяем результат на валидность
-    if (m_selected_row == -1)
-    {
-        emit errorMsg("[rowFromSelectDialog] Строка не выбрана!");
-        delete select_dialog;
-        delete model;
-        return QSqlRecord();
-    }
-    //Делаем его снова невалидным
-    m_selected_row = -1;
-    QSqlRecord res = model->record(row);
-    delete select_dialog;
-    delete model;
-    return res;
 }
 
 void TradeManagementDB::addTables()

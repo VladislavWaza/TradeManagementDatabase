@@ -1,6 +1,7 @@
 #include "mainwindow.h"
 #include "ui_mainwindow.h"
 #include "authorization.h"
+#include "showingform.h"
 
 #include <QMessageBox>
 #include <QSqlError>
@@ -46,6 +47,13 @@ void MainWindow::changeAccessRights()
     //TODO!
 }
 
+void MainWindow::onDatabaseError(const QString &msg)
+{
+    QMessageBox::critical(this, QString("ОШИБКА!"), msg);
+}
+
+/*Функции показа таблиц*/
+
 void MainWindow::on_showShops_triggered()
 {
     m_db.bind(TradeManagementDB::TableType::Shops);
@@ -89,11 +97,7 @@ void MainWindow::on_showDepProds_triggered()
     m_ui->tableView->setModel(m_model);
 }
 
-
-void MainWindow::onDatabaseError(const QString &msg)
-{
-    QMessageBox::critical(this, QString("ОШИБКА!"), msg);
-}
+/*Функции добвления/удаления строки, обновления, сохранения таблицы*/
 
 void MainWindow::on_addRow_clicked()
 {
@@ -117,8 +121,6 @@ void MainWindow::on_update_clicked()
     m_ui->tableView->setModel(m_model);
 }
 
-
-
 void MainWindow::on_deleteRow_clicked()
 {
     if (QMessageBox::question(this, "Хотите удалить запись?", "Это также удалит все зависимые записи при их наличии", "Удалить", "Отмена") == 0)
@@ -127,5 +129,37 @@ void MainWindow::on_deleteRow_clicked()
         m_db.getModel(m_model);
         m_ui->tableView->setModel(m_model);
     }
+}
+
+/*Показ товаров*/
+
+void MainWindow::on_prodsOnBase_triggered()
+{
+    QSqlTableModel* model = nullptr;
+    m_db.showProds(TradeManagementDB::TableType::WholesaleBases, model);
+    //Создаем и запускаем окно
+    ShowingForm* showing_form = new ShowingForm(model);
+    showing_form->setWindowTitle("Информация о товарах");
+    showing_form->show();
+}
+
+void MainWindow::on_prodsOnShop_triggered()
+{
+    QSqlTableModel* model = nullptr;
+    m_db.showProds(TradeManagementDB::TableType::Shops, model);
+    //Создаем и запускаем окно
+    ShowingForm* showing_form = new ShowingForm(model);
+    showing_form->setWindowTitle("Информация о товарах");
+    showing_form->show();
+}
+
+void MainWindow::on_prodsOnDep_triggered()
+{
+    QSqlTableModel* model = nullptr;
+    m_db.showProds(TradeManagementDB::TableType::Departments, model);
+    //Создаем и запускаем окно
+    ShowingForm* showing_form = new ShowingForm(model);
+    showing_form->setWindowTitle("Информация о товарах");
+    showing_form->show();
 }
 

@@ -72,7 +72,18 @@
     <addaction name="showShopProds"/>
     <addaction name="showDepProds"/>
    </widget>
+   <widget class="QMenu" name="menu_2">
+    <property name="title">
+     <string>Показать сведения</string>
+    </property>
+    <addaction name="prodsOnBase"/>
+    <addaction name="prodsOnShop"/>
+    <addaction name="prodsOnDep"/>
+    <addaction name="managers"/>
+    <addaction name="identicalProds"/>
+   </widget>
    <addaction name="menu"/>
+   <addaction name="menu_2"/>
   </widget>
   <widget class="QStatusBar" name="statusbar"/>
   <action name="showShops">
@@ -103,6 +114,31 @@
   <action name="showDepProds">
    <property name="text">
     <string>Товары отделов</string>
+   </property>
+  </action>
+  <action name="prodsOnBase">
+   <property name="text">
+    <string>О товарах на базе</string>
+   </property>
+  </action>
+  <action name="prodsOnShop">
+   <property name="text">
+    <string>О товарах в магазине</string>
+   </property>
+  </action>
+  <action name="prodsOnDep">
+   <property name="text">
+    <string>О товарах в отделе</string>
+   </property>
+  </action>
+  <action name="managers">
+   <property name="text">
+    <string>О заведующих</string>
+   </property>
+  </action>
+  <action name="identicalProds">
+   <property name="text">
+    <string>О одинаковых товарах в магазине</string>
    </property>
   </action>
  </widget>

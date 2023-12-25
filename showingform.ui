@@ -1,17 +1,17 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <ui version="4.0">
- <class>SelectDialog</class>
- <widget class="QDialog" name="SelectDialog">
+ <class>ShowingForm</class>
+ <widget class="QWidget" name="ShowingForm">
   <property name="geometry">
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>801</width>
-    <height>482</height>
+    <width>788</width>
+    <height>516</height>
    </rect>
   </property>
   <property name="windowTitle">
-   <string>Выберите связь</string>
+   <string>Form</string>
   </property>
   <layout class="QGridLayout" name="gridLayout">
    <item row="0" column="0">
