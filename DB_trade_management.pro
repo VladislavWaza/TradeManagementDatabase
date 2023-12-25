@@ -14,6 +14,7 @@ SOURCES += \
     main.cpp \
     mainwindow.cpp \
     selectdialog.cpp \
+    shopreport.cpp \
     showingform.cpp \
     trade_management_db.cpp
 
@@ -21,6 +22,7 @@ HEADERS += \
     authorization.h \
     mainwindow.h \
     selectdialog.h \
+    shopreport.h \
     showingform.h \
     trade_management_db.h
 
@@ -28,6 +30,7 @@ FORMS += \
     authorization.ui \
     mainwindow.ui \
     selectdialog.ui \
+    shopreport.ui \
     showingform.ui
 
 # Default rules for deployment.

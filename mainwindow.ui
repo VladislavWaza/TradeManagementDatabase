@@ -83,6 +83,7 @@
     <addaction name="identicalProds"/>
     <addaction name="managers"/>
     <addaction name="missingProds"/>
+    <addaction name="shopReport"/>
    </widget>
    <widget class="QMenu" name="menu_3">
     <property name="title">
@@ -168,6 +169,11 @@
   <action name="closeDep">
    <property name="text">
     <string>Закрытие отдела</string>
+   </property>
+  </action>
+  <action name="shopReport">
+   <property name="text">
+    <string>Отчет по магазину</string>
    </property>
   </action>
  </widget>

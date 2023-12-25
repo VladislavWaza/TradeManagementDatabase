@@ -50,6 +50,9 @@ private slots:
     //Слот закрытия отдела
     void on_closeDep_triggered();
 
+    //Слот выдачи отчета по магазину
+    void on_shopReport_triggered();
+
 private:
     void changeAccessRights();
 

@@ -2,6 +2,7 @@
 #include "ui_mainwindow.h"
 #include "authorization.h"
 #include "showingform.h"
+#include "shopreport.h"
 
 #include <QMessageBox>
 #include <QSqlError>
@@ -199,5 +200,11 @@ void MainWindow::on_closeDep_triggered()
     {
         m_db.closeDepartment();
     }
+}
+
+void MainWindow::on_shopReport_triggered()
+{
+    ShopReport* shop_report_window = new ShopReport(m_db);
+    shop_report_window->show();
 }
 

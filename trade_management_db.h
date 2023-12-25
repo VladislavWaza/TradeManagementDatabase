@@ -4,6 +4,7 @@
 #include <QObject>
 #include <QSqlDatabase>
 #include <QSqlTableModel>
+#include <QList>
 
 class TradeManagementDB : public QObject
 {
@@ -39,6 +40,16 @@ public:
     void showMissingProds(QSqlTableModel *&model);
     //Закрытие отдела с передачей товаров другому
     void closeDepartment();
+
+    //Возвращает id магазина, который выберет пользователь
+    int getShopID();
+    //Возвращает информацию о магазине и его отделы
+    QString getShopInfo(int shop_id);
+    QList<int> getShopDepartmentsIDs(int shop_id);
+
+    //Возвращает информацию о отделе и модель его товаров
+    QString getDepartmentInfo(int department_id, int shop_id);
+    void getDepartmentProducts(QSqlTableModel *&model, int department_id, int shop_id);
 
 private:
     QSqlDatabase m_db;

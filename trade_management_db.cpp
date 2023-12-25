@@ -493,6 +493,120 @@ void TradeManagementDB::closeDepartment()
         emit errorMsg("[closeDepartment] transaction failed");
 }
 
+int TradeManagementDB::getShopID()
+{
+    QSqlRecord record = recordFromSelectDialog(TableType::Shops, "Выберите магазин");
+    if (record == QSqlRecord())
+        return -1;
+    return record.value("id").toInt();
+}
+
+QString TradeManagementDB::getShopInfo(int shop_id)
+{
+    QSqlQuery query(m_db);
+    QString query_text = "SELECT * FROM " + tableTypeToTableName(TableType::Shops) + " "
+                         "WHERE id = " + QString::number(shop_id) + ";";
+    QSqlRecord record;
+    if (!query.exec(query_text))
+    {
+        emit errorMsg("[getShopInfo] " + query.lastError().text());
+    }
+    while (query.next())
+        record = query.record();
+
+    QString str;
+    str.append("ID: " + record.value("id").toString() + '\n');
+    str.append("Название: " + record.value("name").toString() + '\n');
+    str.append("Класс: " + record.value("class").toString() + '\n');
+    str.append("Адрес: " + record.value("actual_address").toString() + '\n');
+    str.append("ОГРН: " + record.value("ogrn").toString() + '\n');
+    str.append("ИНН: " + record.value("inn").toString() + '\n');
+    str.append("КПП: " + record.value("kpp").toString() + '\n');
+    str.append("ID базы: " + record.value("base_id").toString() + '\n');
+
+    int count = 0;
+    query_text = "SELECT COUNT(*) FROM " + tableTypeToTableName(TableType::Departments) + " "
+                         "WHERE shop_id = " + QString::number(shop_id) + ";";
+    if (!query.exec(query_text))
+    {
+        emit errorMsg("[getShopInfo] " + query.lastError().text());
+    }
+    while (query.next())
+        count = query.value(0).toInt();
+    str.append("Число отделов: " + QString::number(count) + '\n');
+    return str;
+}
+
+QList<int> TradeManagementDB::getShopDepartmentsIDs(int shop_id)
+{
+    QSqlQuery query(m_db);
+    QString query_text = "SELECT id FROM " + tableTypeToTableName(TableType::Departments) + " "
+                         "WHERE shop_id = " + QString::number(shop_id) + ";";
+    if (!query.exec(query_text))
+    {
+        emit errorMsg("[getShopDepartmentsIDs] " + query.lastError().text());
+    }
+    QList<int> res;
+    while (query.next())
+        res.append(query.value("id").toInt());
+    return res;
+}
+
+QString TradeManagementDB::getDepartmentInfo(int department_id, int shop_id)
+{
+    QSqlQuery query(m_db);
+    QString query_text = "SELECT * FROM " + tableTypeToTableName(TableType::Departments) + " "
+                         "WHERE id = " + QString::number(department_id) + " "
+                         "AND shop_id = " + QString::number(shop_id) + ";";
+    QSqlRecord record;
+    if (!query.exec(query_text))
+    {
+        emit errorMsg("[getDepartmentInfo] " + query.lastError().text());
+    }
+    while (query.next())
+        record = query.record();
+    QString str;
+    str.append("ID: " + record.value("id").toString() + '\t');
+    str.append("Название: " + record.value("name").toString() + '\t');
+    str.append("Заведующий: " + record.value("manager").toString());
+    return str;
+}
+
+void TradeManagementDB::getDepartmentProducts(QSqlTableModel *&model, int department_id, int shop_id)
+{
+    if (m_db.transaction())
+    {
+        QSqlQuery query(m_db);
+        query.exec("DROP TABLE prods_info;");
+        QString query_text = "CREATE TABLE prods_info AS "
+                         "SELECT dp.article, sp.name, sp.prod_type, sp.variety, sp.price, dp.quantity "
+                         "FROM " + tableTypeToTableName(TableType::DepartmentProducts) + " dp "
+                         "JOIN " + tableTypeToTableName(TableType::ShopProducts) + " sp "
+                         "ON sp.shop_id = dp.shop_id AND sp.article = dp.article "
+                         "WHERE dp.shop_id = " + QString::number(shop_id) + " "
+                         "AND dp.department_id = " + QString::number(department_id) + ';';
+        if (!query.exec(query_text))
+        {
+            emit errorMsg("[getDepartmentProducts] " + query.lastError().text());
+        }
+        else
+        {
+            //Создаем модель
+            model = new QSqlTableModel(nullptr, m_db);
+            model->setEditStrategy(QSqlTableModel::OnManualSubmit);
+            model->setTable("prods_info");
+            model->select();
+            //Деструктор модели надо вызывать отдельно
+        }
+        if (m_db.commit())
+            return;
+        else
+            emit errorMsg("[getDepartmentProducts] commit failed");
+    }
+    else
+        emit errorMsg("[getDepartmentProducts] transaction failed");
+}
+
 //Выдача модели активной таблицы с возможностью изменения
 void TradeManagementDB::getModel(QSqlTableModel *&model)
 {
