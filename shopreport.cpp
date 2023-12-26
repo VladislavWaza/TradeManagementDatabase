@@ -21,6 +21,7 @@ ShopReport::ShopReport(TradeManagementDB& db, QWidget *parent) :
         QLabel *info = new QLabel;
         info->autoFillBackground();
         info->setText(db.getDepartmentInfo(deps[i], shop_id));
+        info->setTextInteractionFlags(Qt::TextSelectableByMouse);
         QTableView *table_view = new QTableView;
         QSqlTableModel* model = nullptr;
         db.getDepartmentProducts(model, deps[i], shop_id);

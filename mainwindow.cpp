@@ -33,19 +33,33 @@ MainWindow::~MainWindow()
 
 void MainWindow::onAuthorization(const QString &login, const QString &pass)
 {
-    //if (login == QString("vlad") && pass == QString("ETU is best"))
+    if (login == QString("abmin") && pass == QString("ETU is best"))
     {
         m_user_type = UserType::Admin;
-        qDebug() << "Admin " << login <<"is logged in!";
         static_cast<Authorization*>(sender())->close();
     }
-    //TODO
+    else if (login == QString("user") && pass == QString("1234"))
+    {
+        m_user_type = UserType::ReadOnly;
+        static_cast<Authorization*>(sender())->close();
+    }
     changeAccessRights();
 }
 
 void MainWindow::changeAccessRights()
 {
-    //TODO!
+    if (m_user_type == UserType::ReadOnly)
+    {
+        m_ui->addRow->setEnabled(false);
+        m_ui->deleteRow->setEnabled(false);
+        m_ui->save->setEnabled(false);
+        m_ui->menu_3->setEnabled(false);
+        m_ui->tableView->setEditTriggers(QAbstractItemView::NoEditTriggers);
+    }
+    else if (m_user_type == UserType::Unauthorized)
+    {
+        this->setEnabled(false);
+    }
 }
 
 void MainWindow::createShowingForm(QSqlTableModel *&model, const QString& title)

@@ -58,7 +58,7 @@ private:
 
     void createShowingForm(QSqlTableModel*& model, const QString &title);
 
-    enum class UserType {Unauthorized, Admin};
+    enum class UserType {Unauthorized, Admin, ReadOnly};
 
     Ui::MainWindow *m_ui;
     TradeManagementDB m_db;
