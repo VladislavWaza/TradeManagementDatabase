@@ -33,7 +33,7 @@ MainWindow::~MainWindow()
 
 void MainWindow::onAuthorization(const QString &login, const QString &pass)
 {
-    if (login == QString("abmin") && pass == QString("ETU is best"))
+    if (login == QString("admin") && pass == QString("ETU is best"))
     {
         m_user_type = UserType::Admin;
         static_cast<Authorization*>(sender())->close();
@@ -42,6 +42,10 @@ void MainWindow::onAuthorization(const QString &login, const QString &pass)
     {
         m_user_type = UserType::ReadOnly;
         static_cast<Authorization*>(sender())->close();
+    }
+    else
+    {
+        m_user_type = UserType::Unauthorized;
     }
     changeAccessRights();
 }
@@ -59,6 +63,10 @@ void MainWindow::changeAccessRights()
     else if (m_user_type == UserType::Unauthorized)
     {
         this->setEnabled(false);
+    }
+    else if (m_user_type == UserType::Admin)
+    {
+        this->setEnabled(true);
     }
 }
 
